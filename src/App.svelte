@@ -1,89 +1,104 @@
 <script>
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from './assets/vite.svg'
-  import heroImg from './assets/hero.png'
-  import Counter from './lib/Counter.svelte'
+  // @ts-nocheck
+  import Bee from './Bee.svelte';
+  import Chicken from './Chicken.svelte';
+  import Blobfish from './Blobfish.svelte';
+  let page = 'menu';
+
+  function openPage(name) {
+    page = name;
+  }
 </script>
 
-<section id="center">
-  <div class="hero">
-    <img src={heroImg} class="base" width="170" height="179" alt="" />
-    <img src={svelteLogo} class="framework" alt="Svelte logo" />
-    <img src={viteLogo} class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/App.svelte</code> and save to test <code>HMR</code></p>
-  </div>
-  <Counter />
-</section>
+<div class="app-shell">
+  {#if page === 'menu'}
+    <div class="menu-card">
+      <h1>Choose a page</h1>
+      <p>Select the bee, chicken, or pond blobfish scene.</p>
+      <div class="button-grid">
+        <button class="page-btn" on:click={() => openPage('bee')}>Bee</button>
+        <button class="page-btn" on:click={() => openPage('chicken')}>Chicken</button>
+        <button class="page-btn" on:click={() => openPage('blobfish')}>Blobfish</button>
+      </div>
+    </div>
+  {:else if page === 'bee'}
+    <Bee on:back={() => openPage('menu')} />
+  {:else if page === 'chicken'}
+    <Chicken on:back={() => openPage('menu')} />
+  {:else if page === 'blobfish'}
+    <Blobfish on:back={() => openPage('menu')} />
+  {:else}
+    <div class="menu-card placeholder">
+      <h1>{page === 'page3' ? 'Page 3' : 'Page'}</h1>
+      <p>This page is a placeholder. You can create it later and wire it in here.</p>
+      <button class="back-btn" on:click={() => openPage('menu')}>Back to menu</button>
+    </div>
+  {/if}
+</div>
 
-<div class="ticks"></div>
+<style>
+  :global(body) {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    background: #f0f7fb;
+    color: #1f2937;
+  }
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true">
-      <use href="/icons.svg#documentation-icon"></use>
-    </svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank" rel="noreferrer">
-          <img class="logo" src={viteLogo} alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://svelte.dev/" target="_blank" rel="noreferrer">
-          <img class="button-icon" src={svelteLogo} alt="" />
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true">
-      <use href="/icons.svg#social-icon"></use>
-    </svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li>
-        <a href="https://github.com/vitejs/vite" target="_blank" rel="noreferrer">
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#github-icon"></use>
-          </svg>
-          GitHub
-        </a>
-      </li>
-      <li>
-        <a href="https://chat.vite.dev/" target="_blank" rel="noreferrer">
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#discord-icon"></use>
-          </svg>
-          Discord
-        </a>
-      </li>
-      <li>
-        <a href="https://x.com/vite_js" target="_blank" rel="noreferrer">
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#x-icon"></use>
-          </svg>
-          X.com
-        </a>
-      </li>
-      <li>
-        <a href="https://bsky.app/profile/vite.dev" target="_blank" rel="noreferrer">
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#bluesky-icon"></use>
-          </svg>
-          Bluesky
-        </a>
-      </li>
-    </ul>
-  </div>
-</section>
+  .app-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
 
-<div class="ticks"></div>
-<section id="spacer"></section>
+  .menu-card {
+    width: min(520px, 100%);
+    padding: 32px;
+    border-radius: 24px;
+    background: white;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+    text-align: center;
+  }
+
+  .menu-card h1 {
+    margin: 0 0 16px;
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .menu-card p {
+    margin: 0 0 28px;
+    color: #4b5563;
+    line-height: 1.7;
+  }
+
+  .button-grid {
+    display: grid;
+    gap: 14px;
+  }
+
+  .page-btn,
+  .back-btn {
+    cursor: pointer;
+    width: 100%;
+    padding: 16px 20px;
+    border: none;
+    border-radius: 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    background: #1d4ed8;
+    color: white;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+  }
+
+  .page-btn:hover,
+  .back-btn:hover {
+    transform: translateY(-1px);
+    background: #2563eb;
+  }
+
+  .placeholder {
+    max-width: 640px;
+  }
+</style>
