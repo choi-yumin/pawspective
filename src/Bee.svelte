@@ -252,6 +252,10 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       rotate: { x: -0.28, y: -0.12, z: 0 }
     });
 
+    // Bee + flowers sit in the left ~40 % of the viewport;
+    // the right side is free for the chat UI.
+    const SCENE_OFFSET_X = -180;
+
     const envGroup = new Zdog.Anchor({ addTo: scene });
 
     // Sky gradient panels
@@ -327,6 +331,15 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     // ─── Flower helpers ────────────────────────────────────────────────
     const fgGroup = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 50, z: 120 } });
 
+    // ── Right-side flower group (world-space, no offset) ─────────────────────
+    // These flowers appear in the right portion of the screen behind the chat UI,
+    // peeking in from the edges and bottom — same Zdog style but placed at +x.
+    const rgGroup = new Zdog.Anchor({
+      addTo: scene,
+      translate: { x: 260, y: 50, z: 120 }
+    });
+
+    // ── Flower factory functions ─────────────────────────────────────────────
     function createDaisy(parent, x, y, z, scale, stemLen, rotX, rotY, petalCol) {
       petalCol = petalCol || color.daisyWhite;
       const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (120 - stemLen), z }, scale });
@@ -682,7 +695,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       lastX = e.clientX; lastY = e.clientY;
       try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
     }
-
     function onPointerMove(e) {
       if (!isDragging) return;
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
@@ -733,6 +745,7 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
         activeCard = null;
       }
     }
+    function onPointerUp() { isDragging = false; }
 
     canvasRef.addEventListener('click',       onCanvasClick);
     canvasRef.addEventListener('pointerdown', onPointerDown);

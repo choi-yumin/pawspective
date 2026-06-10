@@ -1,5 +1,6 @@
 <script>
   // @ts-nocheck
+  import Land from './Land.svelte';
   import Bee from './Bee.svelte';
   // import Chicken from './Chicken.svelte';
   import Blobfish from './Blobfish.svelte';
@@ -14,13 +15,15 @@
   {#if page === 'menu'}
     <div class="menu-card">
       <h1>Choose a page</h1>
-      <p>Select the bee, chicken, or pond blobfish scene.</p>
       <div class="button-grid">
+        <button class="page-btn" on:click={() => openPage('land')}>Land</button>
         <button class="page-btn" on:click={() => openPage('bee')}>Bee</button>
         <button class="page-btn" on:click={() => openPage('chicken')}>Chicken</button>
         <button class="page-btn" on:click={() => openPage('blobfish')}>Blobfish</button>
       </div>
     </div>
+  {:else if page === 'land'}
+    <Land on:back={() => openPage('menu')} />
   {:else if page === 'bee'}
     <Bee on:back={() => openPage('menu')} />
   {:else if page === 'chicken'}
