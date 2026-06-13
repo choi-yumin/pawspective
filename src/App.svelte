@@ -2,7 +2,7 @@
   // @ts-nocheck
   import Bee from './Bee.svelte';
   // import Chicken from './Chicken.svelte';
-  // import Blobfish from './Blobfish.svelte';
+  import Blobfish from './Blobfish.svelte';
   let page = 'menu';
 
   function openPage(name) {
