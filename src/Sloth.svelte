@@ -342,268 +342,337 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
     const PIVOT = new Zdog.Anchor({ addTo: SLOTH_CONT });
     const SLOTH = new Zdog.Anchor({ addTo: PIVOT });
 
-    // Body — stacked rounded blobs, light belly patch up front
-    const bodyAnchor = new Zdog.Anchor({ addTo: SLOTH, translate: { y: 30, z: -30 } });
-    const b1 = new Zdog.Shape({ addTo: bodyAnchor, stroke: 150, color: color.fur });
-    b1.copy({ addTo: bodyAnchor, stroke: 138, color: color.furDark, translate: { z: -26 } });
-    new Zdog.Ellipse({ addTo: bodyAnchor, width: 96, height: 120, stroke: 18, color: color.furLight, fill: true, translate: { z: 60 } });
-    new Zdog.Ellipse({ addTo: bodyAnchor, width: 58, height: 74,  stroke: 10, color: color.faceCream, fill: true, translate: { z: 72 } });
-    // mossy tufts (sloths really do grow algae)
-    new Zdog.Ellipse({ addTo: bodyAnchor, width: 22, height: 10, stroke: 4, color: color.moss, fill: true, translate: { x: -30, y: -20, z: 66 }, rotate: { z: 0.4 } });
-    new Zdog.Ellipse({ addTo: bodyAnchor, width: 16, height: 8,  stroke: 4, color: color.moss, fill: true, translate: { x:  26, y:  12, z: 66 }, rotate: { z: -0.3 } });
-
     // Long arms reaching up to grip the branch, with three claws each
-    function makeArm(sx) {
-      const a = new Zdog.Anchor({ addTo: SLOTH, translate: { x: 42 * sx, y: 14, z: 18 } });
-      new Zdog.Shape({
-        addTo: a,
-        path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: 24 * sx, y: -60, z: -10 }, { x: 30 * sx, y: -150, z: -20 }, { x: 18 * sx, y: -238, z: -30 }] }],
-        stroke: 24, color: color.fur, fill: false
-      });
-      const claw = new Zdog.Anchor({ addTo: a, translate: { x: 18 * sx, y: -244, z: -30 } });
-      for (let i = 0; i < 3; i++) {
-        new Zdog.Shape({ addTo: claw, path: [{ x: (i - 1) * 9, y: 0 }, { x: (i - 1) * 9 - 4 * sx, y: 20, z: 6 }], stroke: 7, color: color.claw });
-      }
-      return a;
-    }
-    const leftArm  = makeArm(-1);
-    const rightArm = makeArm(1);
-
-    // Head
-    const head = new Zdog.Anchor({ addTo: SLOTH, translate: { x: 0, y: -78, z: 10 } });
-    new Zdog.Shape({ addTo: head, stroke: 128, color: color.fur });
-    new Zdog.Ellipse({ addTo: head, width: 96, height: 84, stroke: 16, color: color.faceCream, fill: true, translate: { z: 50 } });
-
-    // Dark eye-mask stripes (the classic sloth look)
-    new Zdog.Ellipse({ addTo: head, width: 30, height: 50, stroke: 6, color: color.mask, fill: true, translate: { x: -26, y: -4, z: 58 }, rotate: { z:  0.35 } });
-    new Zdog.Ellipse({ addTo: head, width: 30, height: 50, stroke: 6, color: color.mask, fill: true, translate: { x:  26, y: -4, z: 58 }, rotate: { z: -0.35 } });
-
-    // Eyes + highlights
-    new Zdog.Shape({ addTo: head, stroke: 15, color: color.eye, translate: { x: -24, y: -2, z: 66 } });
-    new Zdog.Shape({ addTo: head, stroke: 15, color: color.eye, translate: { x:  24, y: -2, z: 66 } });
-    new Zdog.Shape({ addTo: head, stroke: 5,  color: '#FFFFFF', translate: { x: -27, y: -5, z: 72 } });
-    new Zdog.Shape({ addTo: head, stroke: 5,  color: '#FFFFFF', translate: { x:  21, y: -5, z: 72 } });
-
-    // Sleepy lids — cream caps we slide down over the eyes to blink / look drowsy
-    const lidL = new Zdog.Shape({ addTo: head, stroke: 16, color: color.faceCream, translate: { x: -24, y: -12, z: 67 } });
-    const lidR = new Zdog.Shape({ addTo: head, stroke: 16, color: color.faceCream, translate: { x:  24, y: -12, z: 67 } });
-
-    // Cheeks + nose
-    new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x: -40, y: 14, z: 46 } });
-    new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x:  40, y: 14, z: 46 } });
-    new Zdog.Ellipse({ addTo: head, width: 16, height: 11, stroke: 6, color: color.nose, fill: true, translate: { y: 10, z: 60 } });
-
-    // Brows + mouth (mouth is a bezier we re-path for expressions)
-    const leftBrow  = new Zdog.Shape({ addTo: head, path: [{ x: -36, y: -26 }, { x: -14, y: -30 }], stroke: 7, color: color.furDark, translate: { z: 58 }, rotate: { z: -0.1 } });
-    const rightBrow = new Zdog.Shape({ addTo: head, path: [{ x:  14, y: -30 }, { x:  36, y: -26 }], stroke: 7, color: color.furDark, translate: { z: 58 }, rotate: { z:  0.1 } });
-    const mouth = new Zdog.Shape({
-      addTo: head, stroke: 3.5, color: color.nose, closed: false,
-      path: [{ x: -6, y: 22, z: 60 }, { bezier: [{ x: -3, y: 25, z: 60 }, { x: 3, y: 25, z: 60 }, { x: 6, y: 22, z: 60 }] }]
+    // Four limbs reaching up to grip the branch, with three claws each
+    // Body — longer, pear-shaped hanging torso
+    const bodyAnchor = new Zdog.Anchor({
+      addTo: SLOTH,
+      translate: { y: 38, z: -28 },
+      rotate: { z: -0.04 }
     });
 
-    // ─── Expression system ─────────────────────────────────────────────
-    // lidBase is the resting lid height for the current mood; the blink in the
-    // render loop is added on top so blinking works in every expression.
-    let lidBaseL = -6, lidBaseR = -6;
-    function setExpression(name) {
-      let lid = -6, brow = -0.1, mL = -6, mR = 6, my = 22, c0y = 25, c1y = 25;
-      if (name === 'sleepy')        { lid = -6;  brow = -0.1;  my = 22; c0y = 25; c1y = 25; }
-      else if (name === 'content')  { lid = -12; brow = -0.05; my = 20; c0y = 27; c1y = 27; }
-      else if (name === 'happy')    { lid = -14; brow =  0.05; my = 19; c0y = 29; c1y = 29; mL = -8; mR = 8; }
-      else if (name === 'surprised'){ lid = -16; brow = -0.25; my = 22; c0y = 30; c1y = 30; mL = -5; mR = 5; }
-      else if (name === 'grumpy')   { lid = -8;  brow = -0.5;  my = 25; c0y = 20; c1y = 20; }
-      else if (name === 'yawn')     { lid = -16; brow = -0.2;  my = 18; c0y = 38; c1y = 38; mL = -9; mR = 9; }
-      lidBaseL = lid; lidBaseR = lid;
-      leftBrow.rotate.z  = brow;
-      rightBrow.rotate.z = -brow;
-      mouth.path = [
-        { x: mL, y: my, z: 60 },
-        { bezier: [{ x: -3, y: c0y, z: 60 }, { x: 3, y: c1y, z: 60 }, { x: mR, y: my, z: 60 }] }
-      ];
-      mouth.updatePath();
-    }
-    setExpression('sleepy');
+    new Zdog.Shape({ addTo: bodyAnchor, stroke: 138, color: color.fur });
+    new Zdog.Shape({ addTo: bodyAnchor, stroke: 108, color: color.furDark, translate: { y: 42, z: -18 } });
 
-    // ─── Idle + blink loop (slow — this is a sloth) ────────────────────
-    let frame = 0, isRunning = true, isBusy = false, isShaking = false, blinkTimer = 0;
+    new Zdog.Ellipse({
+      addTo: bodyAnchor,
+      width: 82,
+      height: 142,
+      stroke: 14,
+      color: color.furLight,
+      fill: true,
+      translate: { y: 18, z: 58 },
+      rotate: { z: 0.05 }
+    });
 
-    function render() {
-      if (!isRunning) return;
-      frame++;
-
-      if (!isBusy) {
-        SLOTH_CONT.translate.y = 30 + Math.sin(frame / 55) * 5;   // slow breathing
-        if (!isShaking) PIVOT.rotate.z = Math.sin(frame / 80) * 0.04;  // gentle sway
-      }
-      if (isShaking) PIVOT.rotate.z = Math.sin(frame / 4) * 0.07;
-
-      // occasional slow blink
-      blinkTimer++;
-      let blink = 0;
-      if (blinkTimer > 240) {
-        const t = blinkTimer - 240;
-        if (t < 16) blink = Math.sin((t / 16) * Math.PI) * 13;
-        else blinkTimer = 0;
-      }
-      lidL.translate.y = lidBaseL + blink;
-      lidR.translate.y = lidBaseR + blink;
-
-      scene.updateRenderGraph();
-      requestAnimationFrame(render);
-    }
-    render();
-
-    // ─── Interactions ──────────────────────────────────────────────────
-    function triggerWake() {
-      if (isBusy) return;
-      isBusy = true; isShaking = true;
-      setExpression('surprised');
-      const tl = gsap.timeline({
-        onComplete: () => { setExpression('sleepy'); isBusy = false; isShaking = false; PIVOT.rotate.z = 0; }
+    // small irregular fur / algae patches
+    [
+      { x: -38, y: -34, z: 62, w: 24, h: 9, r: 0.5, c: color.moss },
+      { x:  30, y:  10, z: 64, w: 18, h: 8, r: -0.4, c: color.moss },
+      { x: -18, y:  52, z: 64, w: 26, h: 8, r: 0.2, c: color.furDark }
+    ].forEach(p => {
+      new Zdog.Ellipse({
+        addTo: bodyAnchor,
+        width: p.w,
+        height: p.h,
+        stroke: 4,
+        fill: true,
+        color: p.c,
+        translate: { x: p.x, y: p.y, z: p.z },
+        rotate: { z: p.r }
       });
-      tl.to(leftArm.rotate,  { duration: 0.25, z: 0.15, ease: 'power2.out' });
-      tl.to(rightArm.rotate, { duration: 0.25, z: -0.15, ease: 'power2.out' }, '<');
-      tl.add(() => setExpression('grumpy'), 0.5);
-      tl.to(leftArm.rotate,  { duration: 0.6, z: 0, ease: 'power1.inOut' }, 0.7);
-      tl.to(rightArm.rotate, { duration: 0.6, z: 0, ease: 'power1.inOut' }, '<');
-      tl.add(() => { isShaking = false; PIVOT.rotate.z = 0; setExpression('content'); }, 1.0);
-      tl.to({}, { duration: 0.8 });
-      askMossy("Someone just nudged me awake from my nap. Give me short, gentle sloth wisdom about waking slowly and not rushing into the day.");
+    });
+
+  // Natural curved limbs: arms longer, back legs slightly behind and lower
+  function makeLimb(sx, baseX, baseY, midX, endX, endY, z, stroke = 20) {
+    const limb = new Zdog.Anchor({
+      addTo: SLOTH,
+      translate: { x: baseX * sx, y: baseY, z }
+    });
+
+    new Zdog.Shape({
+      addTo: limb,
+      path: [
+        { x: 0, y: 0, z: 0 },
+        {
+          bezier: [
+            { x: midX * sx, y: -55, z: -8 },
+            { x: endX * sx, y: -150, z: -18 },
+            { x: endX * sx, y: endY, z: -28 }
+          ]
+        }
+      ],
+      stroke,
+      color: color.fur,
+      fill: false
+    });
+
+    const claw = new Zdog.Anchor({
+      addTo: limb,
+      translate: { x: endX * sx, y: endY - 4, z: -28 },
+      rotate: { z: -0.18 * sx }
+    });
+
+    for (let i = 0; i < 3; i++) {
+      new Zdog.Shape({
+        addTo: claw,
+        path: [
+          { x: (i - 1) * 8, y: 0 },
+          { bezier: [
+            { x: (i - 1) * 8 - 3 * sx, y: 8 },
+            { x: (i - 1) * 8 - 6 * sx, y: 15 },
+            { x: (i - 1) * 8 - 4 * sx, y: 23 }
+          ]}
+        ],
+        stroke: 6,
+        color: color.claw,
+        closed: false
+      });
     }
 
-    function climb() {
-      if (isBusy) return;
-      isBusy = true;
-      setExpression('content');
-      const tl = gsap.timeline({ onComplete: () => { setExpression('sleepy'); isBusy = false; } });
-      // reach, shuffle right… pause… shuffle back. Everything unhurried.
-      tl.to(rightArm.rotate,    { duration: 0.9, z: -0.35, x: 0.2, ease: 'sine.inOut' });
-      tl.to(SLOTH_CONT.translate,{ duration: 1.6, x: 150,  ease: 'power1.inOut' }, '-=0.3');
-      tl.to(PIVOT.rotate,       { duration: 1.6, z: -0.08, ease: 'power1.inOut' }, '<');
-      tl.to(rightArm.rotate,    { duration: 0.7, z: 0, x: 0, ease: 'sine.inOut' }, '<');
-      tl.to({}, { duration: 0.6 });
-      tl.to(leftArm.rotate,     { duration: 0.9, z: 0.35, x: 0.2, ease: 'sine.inOut' });
-      tl.to(SLOTH_CONT.translate,{ duration: 1.8, x: 0,   ease: 'power1.inOut' }, '-=0.3');
-      tl.to(PIVOT.rotate,       { duration: 1.8, z: 0,    ease: 'power1.inOut' }, '<');
-      tl.to(leftArm.rotate,     { duration: 0.7, z: 0, x: 0, ease: 'sine.inOut' }, '<');
-    }
+    return limb;
+  }
 
-    function yawn() {
-      if (isBusy) return;
-      isBusy = true;
-      const tl = gsap.timeline({ onComplete: () => { setExpression('sleepy'); isBusy = false; } });
-      tl.add(() => setExpression('content'));
-      tl.to(head.rotate,        { duration: 0.6, x: -0.15, ease: 'sine.inOut' });
-      tl.add(() => setExpression('yawn'), 0.6);
-      tl.to([leftArm.rotate, rightArm.rotate], { duration: 0.9, x: -0.4, ease: 'power2.out' }, '<');
-      tl.to(SLOTH_CONT.translate, { duration: 0.9, y: 18, ease: 'power2.out' }, '<');
-      tl.to({}, { duration: 1.0 });                       // hold the yawn
-      tl.add(() => setExpression('content'));
-      tl.to([leftArm.rotate, rightArm.rotate], { duration: 1.0, x: 0, ease: 'power1.inOut' });
-      tl.to(head.rotate,        { duration: 1.0, x: 0, ease: 'power1.inOut' }, '<');
-      tl.to(SLOTH_CONT.translate, { duration: 1.0, y: 30, ease: 'power1.inOut' }, '<');
-    }
+  const leftArm  = makeLimb(-1, 46, 8, 20, 24, -244, 20, 22);
+  const rightArm = makeLimb( 1, 46, 8, 20, 24, -244, 20, 22);
 
-    function snack() {
-      if (isBusy) return;
-      isBusy = true;
-      setExpression('happy');
-      const tl = gsap.timeline({ onComplete: () => { setExpression('content'); isBusy = false; } });
-      // lean toward the hibiscus, reach, then slow contented munches
-      tl.to(SLOTH_CONT.translate, { duration: 1.2, x: 90, y: 16, ease: 'power1.inOut' });
-      tl.to(PIVOT.rotate,        { duration: 1.2, y: 0.3, z: -0.1, ease: 'power1.inOut' }, '<');
-      tl.to(rightArm.rotate,     { duration: 0.6, z: -0.6, x: 0.5, ease: 'back.out(1.4)' }, '-=0.4');
-      tl.to(rightArm.rotate,     { duration: 0.5, z: -0.2, x: 0.2, ease: 'sine.inOut' });
-      for (let i = 0; i < 3; i++) {                         // munch, munch, munch
-        tl.to(head.rotate, { duration: 0.28, x: -0.12, ease: 'sine.inOut' });
-        tl.to(head.rotate, { duration: 0.28, x: 0,     ease: 'sine.inOut' });
-      }
-      tl.to(rightArm.rotate,     { duration: 0.6, z: 0, x: 0, ease: 'power2.in' });
-      tl.to(SLOTH_CONT.translate, { duration: 1.4, x: 0, y: 30, ease: 'power1.inOut' });
-      tl.to(PIVOT.rotate,        { duration: 1.4, y: 0, z: 0, ease: 'power1.inOut' }, '<');
-      askMossy("I just had a sweet hibiscus flower, my favorite treat. Share a short, dreamy thought about savoring small pleasures slowly.");
-    }
+  const leftLeg  = makeLimb(-1, 34, 88, 30, 68, -236, -24, 19);
+  const rightLeg = makeLimb( 1, 34, 88, 30, 68, -236, -24, 19);
 
-    function talkingAnimation() {
-      if (isBusy) return;
-      isBusy = true;
-      setExpression('content');
-      const tl = gsap.timeline({ onComplete: () => { setExpression('sleepy'); isBusy = false; } });
-      tl.to(head.rotate,     { duration: 0.7, z: 0.06, ease: 'sine.inOut' });
-      tl.to(leftArm.rotate,  { duration: 0.7, z: 0.18, x: 0.1, ease: 'sine.inOut' }, '<');
-      tl.to(head.rotate,     { duration: 0.7, z: -0.05, ease: 'sine.inOut' });
-      tl.to(leftArm.rotate,  { duration: 0.7, z: 0, x: 0, ease: 'sine.inOut' }, '<');
-      tl.to(head.rotate,     { duration: 0.7, z: 0, ease: 'sine.inOut' });
-    }
+  // Head
+  const head = new Zdog.Anchor({ addTo: SLOTH, translate: { x: 0, y: -78, z: 10 } });
+  new Zdog.Shape({ addTo: head, stroke: 128, color: color.fur });
+  new Zdog.Ellipse({ addTo: head, width: 96, height: 84, stroke: 16, color: color.faceCream, fill: true, translate: { z: 50 } });
 
-    triggerWakeFn = triggerWake;
-    climbFn       = climb;
-    yawnFn        = yawn;
-    snackFn       = snack;
-    talkingFn     = talkingAnimation;
+  // Dark eye-mask stripes (the classic sloth look)
+  new Zdog.Ellipse({ addTo: head, width: 30, height: 50, stroke: 6, color: color.mask, fill: true, translate: { x: -26, y: -4, z: 58 }, rotate: { z:  0.35 } });
+  new Zdog.Ellipse({ addTo: head, width: 30, height: 50, stroke: 6, color: color.mask, fill: true, translate: { x:  26, y: -4, z: 58 }, rotate: { z: -0.35 } });
 
-    // ─── Pointer: drag to stir the sloth awake ─────────────────────────
-    const hibiscusZone = { x: 250, y: -110, r: 90 };
-    let isDragging = false, lastX = 0, lastY = 0, wasDragging = false, dragDist = 0;
-    const sensitivity = 0.006;
+  // Eyes + highlights
+  new Zdog.Shape({ addTo: head, stroke: 15, color: color.eye, translate: { x: -24, y: -2, z: 66 } });
+  new Zdog.Shape({ addTo: head, stroke: 15, color: color.eye, translate: { x:  24, y: -2, z: 66 } });
+  new Zdog.Shape({ addTo: head, stroke: 5,  color: '#FFFFFF', translate: { x: -27, y: -5, z: 72 } });
+  new Zdog.Shape({ addTo: head, stroke: 5,  color: '#FFFFFF', translate: { x:  21, y: -5, z: 72 } });
 
-    function onPointerDown(e) {
-      isDragging = true; wasDragging = false; dragDist = 0;
-      lastX = e.clientX; lastY = e.clientY;
-      try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
-    }
-    function onPointerMove(e) {
-      if (!isDragging) return;
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      dragDist += dist;
-      if (dist > 10) wasDragging = true;
-      PIVOT.rotate.y += dx * sensitivity;
-      PIVOT.rotate.x += dy * sensitivity;
-      PIVOT.rotate.x  = Math.max(-TAU / 9, Math.min(TAU / 9, PIVOT.rotate.x));
-      scene.updateRenderGraph();
-    }
-    function onPointerUp() {
-      isDragging = false;
-      if (dragDist > 70 && !isBusy) triggerWake();   // a real tug wakes Mossy
-    }
+  // Sleepy lids — cream caps we slide down over the eyes to blink / look drowsy
+  const lidL = new Zdog.Shape({ addTo: head, stroke: 16, color: color.faceCream, translate: { x: -24, y: -12, z: 67 } });
+  const lidR = new Zdog.Shape({ addTo: head, stroke: 16, color: color.faceCream, translate: { x:  24, y: -12, z: 67 } });
 
-    function onCanvasClick(e) {
-      if (wasDragging) return;
-      const rect = canvasRef.getBoundingClientRect();
-      const cx = (e.clientX - rect.left - rect.width  / 2);
-      const cy = (e.clientY - rect.top  - rect.height / 2);
+  // Cheeks + nose
+  new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x: -40, y: 14, z: 46 } });
+  new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x:  40, y: 14, z: 46 } });
+  new Zdog.Ellipse({ addTo: head, width: 16, height: 11, stroke: 6, color: color.nose, fill: true, translate: { y: 10, z: 60 } });
 
-      if (Math.hypot(cx - hibiscusZone.x, cy - hibiscusZone.y) < hibiscusZone.r) {
-        snack(); return;
-      }
-      // Tapping the sloth opens the radial menu
-      if (Math.hypot(cx, cy - 10) < 170) {
-        radialMenuOpen = !radialMenuOpen;
-        activeCard = null;
-      }
-    }
-
-    canvasRef.addEventListener('click',       onCanvasClick);
-    canvasRef.addEventListener('pointerdown', onPointerDown);
-    canvasRef.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup',      onPointerUp);
-
-    // First thought after a lazy pause, then keep them coming slowly
-    setTimeout(() => showThought("Mmm… I'm thinking about rest and patience. What about you? 🌿"), 4000);
-    scheduleThought();
-
-    return () => {
-      isRunning = false;
-      if (thoughtTimer) clearTimeout(thoughtTimer);
-      if (bubbleAutoHideTimer) clearTimeout(bubbleAutoHideTimer);
-      canvasRef?.removeEventListener('click',       onCanvasClick);
-      canvasRef?.removeEventListener('pointerdown', onPointerDown);
-      canvasRef?.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup',       onPointerUp);
-    };
+  // Brows + mouth (mouth is a bezier we re-path for expressions)
+  const leftBrow  = new Zdog.Shape({ addTo: head, path: [{ x: -36, y: -26 }, { x: -14, y: -30 }], stroke: 7, color: color.furDark, translate: { z: 58 }, rotate: { z: -0.1 } });
+  const rightBrow = new Zdog.Shape({ addTo: head, path: [{ x:  14, y: -30 }, { x:  36, y: -26 }], stroke: 7, color: color.furDark, translate: { z: 58 }, rotate: { z:  0.1 } });
+  const mouth = new Zdog.Shape({
+    addTo: head, stroke: 3.5, color: color.nose, closed: false,
+    path: [{ x: -6, y: 22, z: 60 }, { bezier: [{ x: -3, y: 25, z: 60 }, { x: 3, y: 25, z: 60 }, { x: 6, y: 22, z: 60 }] }]
   });
+
+  // ─── Expression system ─────────────────────────────────────────────
+  // lidBase is the resting lid height for the current mood; the blink in the
+  // render loop is added on top so blinking works in every expression.
+  let lidBaseL = -6, lidBaseR = -6;
+  function setExpression(name) {
+    let lid = -6, brow = -0.1, mL = -6, mR = 6, my = 22, c0y = 25, c1y = 25;
+    if (name === 'sleepy')        { lid = -6;  brow = -0.1;  my = 22; c0y = 25; c1y = 25; }
+    else if (name === 'content')  { lid = -12; brow = -0.05; my = 20; c0y = 27; c1y = 27; }
+    else if (name === 'happy')    { lid = -14; brow =  0.05; my = 19; c0y = 29; c1y = 29; mL = -8; mR = 8; }
+    else if (name === 'surprised'){ lid = -16; brow = -0.25; my = 22; c0y = 30; c1y = 30; mL = -5; mR = 5; }
+    else if (name === 'grumpy')   { lid = -8;  brow = -0.5;  my = 25; c0y = 20; c1y = 20; }
+    else if (name === 'yawn')     { lid = -16; brow = -0.2;  my = 18; c0y = 38; c1y = 38; mL = -9; mR = 9; }
+    lidBaseL = lid; lidBaseR = lid;
+    leftBrow.rotate.z  = brow;
+    rightBrow.rotate.z = -brow;
+    mouth.path = [
+      { x: mL, y: my, z: 60 },
+      { bezier: [{ x: -3, y: c0y, z: 60 }, { x: 3, y: c1y, z: 60 }, { x: mR, y: my, z: 60 }] }
+    ];
+    mouth.updatePath();
+  }
+  setExpression('sleepy');
+
+  // ─── Idle + blink loop (slow — this is a sloth) ────────────────────
+  let frame = 0, isRunning = true, isBusy = false, isShaking = false, blinkTimer = 0;
+
+  function render() {
+    if (!isRunning) return;
+    frame++;
+
+    if (!isBusy) {
+      SLOTH_CONT.translate.y = 30 + Math.sin(frame / 55) * 5;   // slow breathing
+      if (!isShaking) PIVOT.rotate.z = Math.sin(frame / 80) * 0.04;  // gentle sway
+    }
+    if (isShaking) PIVOT.rotate.z = Math.sin(frame / 4) * 0.07;
+
+    // occasional slow blink
+    blinkTimer++;
+    let blink = 0;
+    if (blinkTimer > 240) {
+      const t = blinkTimer - 240;
+      if (t < 16) blink = Math.sin((t / 16) * Math.PI) * 13;
+      else blinkTimer = 0;
+    }
+    lidL.translate.y = lidBaseL + blink;
+    lidR.translate.y = lidBaseR + blink;
+
+    scene.updateRenderGraph();
+    requestAnimationFrame(render);
+  }
+  render();
+
+  // ─── Interactions ──────────────────────────────────────────────────
+  function triggerWake() {
+    if (isBusy) return;
+    isBusy = true; isShaking = true;
+    setExpression('surprised');
+    const tl = gsap.timeline({
+      onComplete: () => { setExpression('sleepy'); isBusy = false; isShaking = false; PIVOT.rotate.z = 0; }
+    });
+    tl.to(leftArm.rotate,  { duration: 0.25, z: 0.15, ease: 'power2.out' });
+    tl.to(rightArm.rotate, { duration: 0.25, z: -0.15, ease: 'power2.out' }, '<');
+    tl.add(() => setExpression('grumpy'), 0.5);
+    tl.to(leftArm.rotate,  { duration: 0.6, z: 0, ease: 'power1.inOut' }, 0.7);
+    tl.to(rightArm.rotate, { duration: 0.6, z: 0, ease: 'power1.inOut' }, '<');
+    tl.add(() => { isShaking = false; PIVOT.rotate.z = 0; setExpression('content'); }, 1.0);
+    tl.to({}, { duration: 0.8 });
+    askMossy("Someone just nudged me awake from my nap. Give me short, gentle sloth wisdom about waking slowly and not rushing into the day.");
+  }
+
+  function climb() {
+    if (isBusy) return;
+    isBusy = true;
+    setExpression('content');
+    const tl = gsap.timeline({ onComplete: () => { setExpression('sleepy'); isBusy = false; } });
+    // reach, shuffle right… pause… shuffle back. Everything unhurried.
+    tl.to(rightArm.rotate,    { duration: 0.9, z: -0.35, x: 0.2, ease: 'sine.inOut' });
+    tl.to(SLOTH_CONT.translate,{ duration: 1.6, x: 150,  ease: 'power1.inOut' }, '-=0.3');
+    tl.to(PIVOT.rotate,       { duration: 1.6, z: -0.08, ease: 'power1.inOut' }, '<');
+    tl.to(rightArm.rotate,    { duration: 0.7, z: 0, x: 0, ease: 'sine.inOut' }, '<');
+    tl.to({}, { duration: 0.6 });
+    tl.to(leftArm.rotate,     { duration: 0.9, z: 0.35, x: 0.2, ease: 'sine.inOut' });
+    tl.to(SLOTH_CONT.translate,{ duration: 1.8, x: 0,   ease: 'power1.inOut' }, '-=0.3');
+    tl.to(PIVOT.rotate,       { duration: 1.8, z: 0,    ease: 'power1.inOut' }, '<');
+    tl.to(leftArm.rotate,     { duration: 0.7, z: 0, x: 0, ease: 'sine.inOut' }, '<');
+  }
+
+  function yawn() {
+    if (isBusy) return;
+    isBusy = true;
+    const tl = gsap.timeline({ onComplete: () => { setExpression('sleepy'); isBusy = false; } });
+    tl.add(() => setExpression('content'));
+    tl.to(head.rotate,        { duration: 0.6, x: -0.15, ease: 'sine.inOut' });
+    tl.add(() => setExpression('yawn'), 0.6);
+    tl.to([leftArm.rotate, rightArm.rotate, leftLeg.rotate, rightLeg.rotate], { duration: 0.9, x: -0.4, ease: 'power2.out' }, '<');      tl.to(SLOTH_CONT.translate, { duration: 0.9, y: 18, ease: 'power2.out' }, '<');
+    tl.to({}, { duration: 1.0 });                       // hold the yawn
+    tl.add(() => setExpression('content'));
+    tl.to([leftArm.rotate, rightArm.rotate, leftLeg.rotate, rightLeg.rotate], { duration: 1.0, x: 0, ease: 'power1.inOut' });
+    tl.to(head.rotate,        { duration: 1.0, x: 0, ease: 'power1.inOut' }, '<');
+    tl.to(SLOTH_CONT.translate, { duration: 1.0, y: 30, ease: 'power1.inOut' }, '<');
+  }
+
+  function snack() {
+    if (isBusy) return;
+    isBusy = true;
+    setExpression('happy');
+    const tl = gsap.timeline({ onComplete: () => { setExpression('content'); isBusy = false; } });
+    // lean toward the hibiscus, reach, then slow contented munches
+    tl.to(SLOTH_CONT.translate, { duration: 1.2, x: 90, y: 16, ease: 'power1.inOut' });
+    tl.to(PIVOT.rotate,        { duration: 1.2, y: 0.3, z: -0.1, ease: 'power1.inOut' }, '<');
+    tl.to(rightArm.rotate,     { duration: 0.6, z: -0.6, x: 0.5, ease: 'back.out(1.4)' }, '-=0.4');
+    tl.to(rightArm.rotate,     { duration: 0.5, z: -0.2, x: 0.2, ease: 'sine.inOut' });
+    for (let i = 0; i < 3; i++) {                         // munch, munch, munch
+      tl.to(head.rotate, { duration: 0.28, x: -0.12, ease: 'sine.inOut' });
+      tl.to(head.rotate, { duration: 0.28, x: 0,     ease: 'sine.inOut' });
+    }
+    tl.to(rightArm.rotate,     { duration: 0.6, z: 0, x: 0, ease: 'power2.in' });
+    tl.to(SLOTH_CONT.translate, { duration: 1.4, x: 0, y: 30, ease: 'power1.inOut' });
+    tl.to(PIVOT.rotate,        { duration: 1.4, y: 0, z: 0, ease: 'power1.inOut' }, '<');
+    askMossy("I just had a sweet hibiscus flower, my favorite treat. Share a short, dreamy thought about savoring small pleasures slowly.");
+  }
+
+  function talkingAnimation() {
+    if (isBusy) return;
+    isBusy = true;
+    setExpression('content');
+    const tl = gsap.timeline({ onComplete: () => { setExpression('sleepy'); isBusy = false; } });
+    tl.to(head.rotate,     { duration: 0.7, z: 0.06, ease: 'sine.inOut' });
+    tl.to(leftArm.rotate,  { duration: 0.7, z: 0.18, x: 0.1, ease: 'sine.inOut' }, '<');
+    tl.to(head.rotate,     { duration: 0.7, z: -0.05, ease: 'sine.inOut' });
+    tl.to(leftArm.rotate,  { duration: 0.7, z: 0, x: 0, ease: 'sine.inOut' }, '<');
+    tl.to(head.rotate,     { duration: 0.7, z: 0, ease: 'sine.inOut' });
+  }
+
+  triggerWakeFn = triggerWake;
+  climbFn       = climb;
+  yawnFn        = yawn;
+  snackFn       = snack;
+  talkingFn     = talkingAnimation;
+
+  // ─── Pointer: drag to stir the sloth awake ─────────────────────────
+  const hibiscusZone = { x: 250, y: -110, r: 90 };
+  let isDragging = false, lastX = 0, lastY = 0, wasDragging = false, dragDist = 0;
+  const sensitivity = 0.006;
+
+  function onPointerDown(e) {
+    isDragging = true; wasDragging = false; dragDist = 0;
+    lastX = e.clientX; lastY = e.clientY;
+    try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    dragDist += dist;
+    if (dist > 10) wasDragging = true;
+    PIVOT.rotate.y += dx * sensitivity;
+    PIVOT.rotate.x += dy * sensitivity;
+    PIVOT.rotate.x  = Math.max(-TAU / 9, Math.min(TAU / 9, PIVOT.rotate.x));
+    scene.updateRenderGraph();
+  }
+  function onPointerUp() {
+    isDragging = false;
+    if (dragDist > 70 && !isBusy) triggerWake();   // a real tug wakes Mossy
+  }
+
+  function onCanvasClick(e) {
+    if (wasDragging) return;
+    const rect = canvasRef.getBoundingClientRect();
+    const cx = (e.clientX - rect.left - rect.width  / 2);
+    const cy = (e.clientY - rect.top  - rect.height / 2);
+
+    if (Math.hypot(cx - hibiscusZone.x, cy - hibiscusZone.y) < hibiscusZone.r) {
+      snack(); return;
+    }
+    // Tapping the sloth opens the radial menu
+    if (Math.hypot(cx, cy - 10) < 170) {
+      radialMenuOpen = !radialMenuOpen;
+      activeCard = null;
+    }
+  }
+
+  canvasRef.addEventListener('click',       onCanvasClick);
+  canvasRef.addEventListener('pointerdown', onPointerDown);
+  canvasRef.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup',      onPointerUp);
+
+  // First thought after a lazy pause, then keep them coming slowly
+  setTimeout(() => showThought("Mmm… I'm thinking about rest and patience. What about you? 🌿"), 4000);
+  scheduleThought();
+
+  return () => {
+    isRunning = false;
+    if (thoughtTimer) clearTimeout(thoughtTimer);
+    if (bubbleAutoHideTimer) clearTimeout(bubbleAutoHideTimer);
+    canvasRef?.removeEventListener('click',       onCanvasClick);
+    canvasRef?.removeEventListener('pointerdown', onPointerDown);
+    canvasRef?.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup',       onPointerUp);
+  };
+});
 </script>
 
 <!-- ─── Top bar ──────────────────────────────────────────────────────── -->
