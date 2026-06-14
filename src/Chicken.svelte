@@ -533,8 +533,6 @@
 <!-- ─── Hint ───────────────────────────────────────────────────────── -->
 <p class="hint">Tap the chicken to open interactions ✿</p>
 
-<div class="credit">Made by MakMin</div>
-
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
 

@@ -30,12 +30,11 @@
     const r = new Zdog.Anchor({ addTo: illo });
 
     // floating island
-    new Zdog.Ellipse({ addTo:r, width:300, height:220, rotate:{x:TAU/4}, stroke:0, color:GRASS, fill:true });
-    new Zdog.Cylinder({ addTo:r, diameter:290, length:18, rotate:{x:TAU/4}, translate:{y:9}, stroke:false, color:GRASSD, backface:GRASS });
-    new Zdog.Cylinder({ addTo:r, diameter:270, length:55, rotate:{x:TAU/4}, translate:{y:38}, stroke:false, color:DIRT, backface:DIRTD });
+    new Zdog.Ellipse({ addTo:r, width:450, height:330, rotate:{x:TAU/4}, stroke:0, color:GRASS, fill:true });
+    new Zdog.Cylinder({ addTo:r, diameter:435, length:18, rotate:{x:TAU/4}, translate:{y:9}, stroke:false, color:GRASSD, backface:GRASS });
+    new Zdog.Cylinder({ addTo:r, diameter:405, length:55, rotate:{x:TAU/4}, translate:{y:38}, stroke:false, color:DIRT, backface:DIRTD });
   }
-
-  // map client coords -> offset from canvas center, in logical px
+// map client coords -> offset from canvas center, in logical px
   function cursorOffset(e) {
     const rect = canvas.getBoundingClientRect();
     const lx = (e.clientX - rect.left) * (canvas.width  / rect.width);

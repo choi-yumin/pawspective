@@ -7,7 +7,6 @@
   const dispatch = createEventDispatcher();
   let canvasRef;
 
-<<<<<<< HEAD
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
   let radialMenuOpen = false;
@@ -214,10 +213,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       isApiLoading = false;
     }
   }
-=======
-  // Pulls your key safely from Svelte's import.meta.env system
-  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY; 
->>>>>>> 9202562 (land canvas, zoom edits)
 
   onMount(() => {
     if (!canvasRef) return;
@@ -257,14 +252,10 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       rotate: { x: -0.28, y: -0.12, z: 0 }
     });
 
-<<<<<<< HEAD
     // Bee + flowers sit in the left ~40 % of the viewport;
     // the right side is free for the chat UI.
     const SCENE_OFFSET_X = -180;
 
-=======
-    const SCENE_OFFSET_X = -180;
->>>>>>> 9202562 (land canvas, zoom edits)
     const envGroup = new Zdog.Anchor({ addTo: scene });
 
     // Sky gradient panels
@@ -337,12 +328,8 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       new Zdog.Shape({ addTo: t, stroke: 90, color: '#7fcf38', translate: { y: -185, x: 20 } });
     });
 
-<<<<<<< HEAD
     // ─── Flower helpers ────────────────────────────────────────────────
     const fgGroup = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 50, z: 120 } });
-=======
-    const fgGroup = new Zdog.Anchor({ addTo: scene, translate: { x: SCENE_OFFSET_X, y: 50, z: 120 } });
->>>>>>> 9202562 (land canvas, zoom edits)
 
     // ── Right-side flower group (world-space, no offset) ─────────────────────
     // These flowers appear in the right portion of the screen behind the chat UI,
@@ -416,80 +403,11 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     // ─── Honeycomb – placed prominently in the scene ───────────────────
     const honeycombGroup = new Zdog.Anchor({ addTo: fgGroup, translate: { x: -310, y: -180, z: -60 } });
 
-<<<<<<< HEAD
     // Hanging string
     new Zdog.Shape({
       addTo: honeycombGroup,
       path: [{ x: 0, y: -80 }, { x: 0, y: -30 }],
       stroke: 5, color: color.trunkBrown
-=======
-    const fd = [
-      {f:'r',x:-55, y:135,z:-80, s:5.5, len:160, rx:-TAU/5,   ry:0.3},
-      {f:'s',x:115, y:210,z:120, s:4.2, len:110, rx:-TAU/3.5, ry:-0.4},
-      {f:'d',x:-195,y:115,z:-180,s:5,   len:150, rx:-TAU/4.5, ry:0.1,  c:'#ffe4ef'},
-      {f:'t',x:215, y:165,z:-100,s:7,   len:100, rx:-TAU/4,   ry:-0.2, c:color.tulipPink},
-      {f:'l',x:-110,y:125,z:60,  s:4.8, len:170, rx:-TAU/5,   ry:-0.5},
-      {f:'d',x:90,  y:155,z:-140,s:4.5, len:130, rx:-TAU/3.8, ry:0.2,  c:'#ffe9f5'},
-      {f:'t',x:-280,y:160,z:90,  s:5.5, len:145, rx:-TAU/4.2, ry:0.5,  c:color.tulipOrange},
-      {f:'d',x:280, y:145,z:50,  s:5,   len:155, rx:-TAU/4,   ry:-0.3, c:color.daisyWhite},
-      {f:'r',x:350, y:185,z:-110,s:4.8, len:115, rx:-TAU/3.2, ry:0.1},
-      {f:'s',x:-340,y:135,z:-30, s:4.5, len:180, rx:-TAU/4.8, ry:-0.2},
-      {f:'l',x:160, y:195,z:100, s:5,   len:125, rx:-TAU/4,   ry:0.4},
-      {f:'t',x:-160,y:150,z:140, s:5.5, len:165, rx:-TAU/5.2, ry:-0.1, c:'#ff85a2'},
-      {f:'d',x:45,  y:205,z:170, s:4.5, len:95,  rx:-TAU/3.4, ry:0.3,  c:'#fff0fb'},
-      {f:'r',x:-260,y:140,z:-130,s:4.2, len:175, rx:-TAU/4.5, ry:-0.4},
-      {f:'d',x:420, y:170,z:0,   s:4,   len:140, rx:-TAU/4,   ry:0.2,  c:'#fff'},
-      {f:'s',x:-450,y:210,z:30,  s:4,   len:105, rx:-TAU/3.6, ry:-0.3},
-    ];
-
-    fd.forEach(d => {
-      if      (d.f === 'd') createDaisy(fgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry, d.c);
-      else if (d.f === 'r') createRose(fgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 'l') createLavender(fgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 's') createSunflower(fgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 't') createTulip(fgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry, d.c);
-    });
-
-    const rd = [
-      {f:'d', x:-80,  y:210, z:160,  s:4.5, len:100, rx:-TAU/3.5, ry:0.2,  c:color.daisyWhite},
-      {f:'t', x:60,   y:190, z:130,  s:5,   len:115, rx:-TAU/4,   ry:-0.3, c:color.tulipPink},
-      {f:'r', x:-160, y:200, z:80,   s:4.8, len:110, rx:-TAU/3.8, ry:0.4},
-      {f:'l', x:160,  y:185, z:90,   s:4.5, len:125, rx:-TAU/4.2, ry:-0.2},
-      {f:'s', x:260,  y:215, z:50,   s:4.2, len:100, rx:-TAU/3.6, ry:0.1},
-      {f:'d', x:340,  y:195, z:110,  s:4,   len:130, rx:-TAU/4,   ry:0.3,  c:'#ffe9f5'},
-      {f:'t', x:-240, y:155, z:40,   s:5.2, len:155, rx:-TAU/5,   ry:0.5,  c:color.tulipOrange},
-      {f:'r', x:300,  y:140, z:-60,  s:4.6, len:160, rx:-TAU/4.5, ry:-0.4},
-      {f:'d', x:400,  y:165, z:20,   s:4.3, len:140, rx:-TAU/4,   ry:0.1,  c:'#fff0fb'},
-      {f:'l', x:-300, y:130, z:-80,  s:4.8, len:170, rx:-TAU/5.2, ry:-0.3},
-      {f:'s', x:180,  y:145, z:-120, s:4,   len:145, rx:-TAU/3.8, ry:0.2},
-      {f:'d', x:-200, y:110, z:-150, s:4.2, len:150, rx:-TAU/4.8, ry:0.4,  c:color.daisyWhite},
-      {f:'r', x:240,  y:120, z:-180, s:4.5, len:165, rx:-TAU/4.2, ry:-0.1},
-      {f:'t', x:360,  y:135, z:-100, s:5,   len:135, rx:-TAU/4,   ry:0.3,  c:'#ff85a2'},
-      {f:'l', x:-100, y:145, z:200,  s:5.2, len:120, rx:-TAU/3.6, ry:-0.5},
-      {f:'d', x:100,  y:160, z:220,  s:4.5, len:105, rx:-TAU/3.4, ry:0.2,  c:'#fff'},
-    ];
-
-    rd.forEach(d => {
-      if      (d.f === 'd') createDaisy(rgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry, d.c);
-      else if (d.f === 'r') createRose(rgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 'l') createLavender(rgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 's') createSunflower(rgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 't') createTulip(rgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry, d.c);
-    });
-
-    let BEE_CONT = new Zdog.Anchor({ addTo: fgGroup, translate: { x: 0, y: -130, z: 0 }, scale: 1.45 });
-    let BEE_PIVOT = new Zdog.Anchor({ addTo: BEE_CONT, translate: { x: 0, y: 32, z: -35 }, rotate: { y: 0 } });
-    let BEE = new Zdog.Anchor({ addTo: BEE_PIVOT, translate: { x: 0, y: -32, z: 35 } });
-
-    let beeHead = new Zdog.Shape({ addTo: BEE, stroke: 135, color: color.beeYellow });
-    new Zdog.Shape({ addTo: beeHead, stroke: 10, color: color.beeBlack, translate: { x: -22, y: 4, z: 36 } });
-    new Zdog.Shape({ addTo: beeHead, stroke: 10, color: color.beeBlack, translate: { x: 14,  y: 4, z: 40 } });
-    
-    // Store references to the mouth path vector to manipulate it directly
-    let beeMouth = new Zdog.Shape({
-      addTo: beeHead, stroke: 3.5, color: color.beeBlack, closed: false,
-      path: [{x:-4,y:10,z:42},{bezier:[{x:-2,y:13,z:42},{x:2,y:13,z:42},{x:4,y:10,z:42}]}]
->>>>>>> 9202562 (land canvas, zoom edits)
     });
 
     // Outer drip for honey feel
@@ -627,15 +545,9 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 
     let bodyAnchor = new Zdog.Anchor({ addTo: BEE, translate: { y: 32, z: -35 } });
     let p1 = new Zdog.Shape({ addTo: bodyAnchor, stroke: 140, color: color.beeYellow });
-<<<<<<< HEAD
     let p2 = p1.copy({ addTo: bodyAnchor, stroke: 162, color: color.beeBlack,   translate: { z: -32  } });
     let p3 = p1.copy({ addTo: bodyAnchor, stroke: 168, color: color.beeYellow,  translate: { z: -64  } });
     let p4 = p1.copy({ addTo: bodyAnchor, stroke: 156, color: color.beeBlack,   translate: { z: -96  } });
-=======
-    let p2 = p1.copy({ addTo: bodyAnchor, stroke: 162, color: color.beeBlack,  translate: { z: -32  } });
-    let p3 = p1.copy({ addTo: bodyAnchor, stroke: 168, color: color.beeYellow, translate: { z: -64  } });
-    let p4 = p1.copy({ addTo: bodyAnchor, stroke: 156, color: color.beeBlack,  translate: { z: -96  } });
->>>>>>> 9202562 (land canvas, zoom edits)
     new Zdog.Shape({ addTo: bodyAnchor, stroke: 108, color: color.beeBlack, translate: { z: -123 } });
 
     let rightWing = new Zdog.Anchor({ addTo: bodyAnchor, translate: { z: -43, y: -65, x:  29 } });
@@ -644,7 +556,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     new Zdog.Ellipse({ addTo: rightWing, width: 80, height: 160, color: color.beeWhite, fill: true, rotate: { x: TAU/5, z:  TAU/5 }, translate: { x:  65 }, stroke: 0 });
     new Zdog.Ellipse({ addTo: leftWing,  width: 80, height: 160, color: color.beeWhite, fill: true, rotate: { x: TAU/5, z: -TAU/5 }, translate: { x: -65 }, stroke: 0 });
 
-<<<<<<< HEAD
     // ─── Expression system ────────────────────────────────────────────
     function setExpression(name) {
       if (name === 'neutral') {
@@ -668,29 +579,15 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     setExpression('neutral');
 
     let frame = 0, isRunning = true, isGathering = false, isAnnoyed = false, isShaking = false;
-=======
-    let frame = 0, isRunning = true, isGathering = false;
-    let isAnnoyed = false;
->>>>>>> 9202562 (land canvas, zoom edits)
 
     function render() {
       if (!isRunning) return;
       frame++;
-<<<<<<< HEAD
       const wingSpd = isAnnoyed ? 2.5 : 1.0;
       rightWing.rotate.z = -TAU / 6 + (TAU / 10) * Math.sin(frame / (0.9 / wingSpd));
       leftWing.rotate.z  =  TAU / 6 - (TAU / 10) * Math.sin(frame / (0.9 / wingSpd));
       antlerAnchor.rotate.x = (TAU / 40) * Math.sin(frame / 10);
       if (isShaking) BEE_PIVOT.rotate.z = Math.sin(frame / 3) * 0.18;
-=======
-      
-      // If annoyed, make wings flap wildly to show agitation
-      const wingSpeedModifier = isAnnoyed ? 2.5 : 1.0;
-      rightWing.rotate.z = -TAU/6 + (TAU/10) * Math.sin(frame / (0.9 / wingSpeedModifier));
-      leftWing.rotate.z  =  TAU/6 - (TAU/10) * Math.sin(frame / (0.9 / wingSpeedModifier));
-      
-      antlerAnchor.rotate.x = (TAU/40) * Math.sin(frame / 10);
->>>>>>> 9202562 (land canvas, zoom edits)
       if (!isGathering) {
         BEE_CONT.translate.y = -100 + Math.sin(frame / 14) * 5;
         BEE_CONT.translate.x = Math.cos(frame / 28) * 4;
@@ -700,7 +597,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     }
     render();
 
-<<<<<<< HEAD
     // ─── Interaction animations ────────────────────────────────────────
     function triggerAnnoyance() {
       if (isAnnoyed) return;
@@ -728,59 +624,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       // Flying in full 3D with rotations to show side and back views
       tl.to(BEE_CONT.translate, { duration: 0.4, x: -200, y: -150, z: 80, ease: 'power2.inOut' });
       tl.to(BEE_PIVOT.rotate,   { duration: 0.4, x: 0.3, y: -0.6, z: 0.5, ease: 'power2.inOut' }, 0);
-=======
-    let bubbleTimeout = null;
-
-    const bubble     = document.getElementById('chat-bubble');
-    const bubbleText = document.getElementById('bubble-text');
-    const typingDots = document.getElementById('typing-dots');
-    const hint       = document.getElementById('hint');
-    const userInput  = document.getElementById('user-input');
-    const sendBtn    = document.getElementById('send-btn');
-
-    function showBubble(text) {
-      if (bubbleTimeout) clearTimeout(bubbleTimeout);
-      typingDots.style.display = 'none';
-      bubbleText.style.display = 'block';
-      bubbleText.textContent   = text;
-      bubble.classList.add('show');
-      hint.style.opacity = '0';
-      bubbleTimeout = setTimeout(() => {
-        bubble.classList.remove('show');
-        setTimeout(() => { hint.style.opacity = '0.75'; }, 600);
-      }, 9000);
-    }
-
-    function showTyping() {
-      if (bubbleTimeout) clearTimeout(bubbleTimeout);
-      bubbleText.style.display = 'none';
-      typingDots.style.display = 'flex';
-      bubble.classList.add('show');
-    }
-
-    // OpenAI Chat History Structure (role names are 'assistant' and 'user')
-    let chatHistory = [
-      {
-        role: 'assistant',
-        content: "Buzz! 🌸 Ask me about effort, rest, or what others think of you!"
-      }
-    ];
-
-    const SYSTEM_TEXT = `You are Buzz, an adorable wise bee who lives in a flower garden. You speak in short, warm, whimsical messages (2-4 sentences max). You use flower and bee metaphors naturally.
-Your specialty is helping people think about:
-- How others perceive them (social perception, first impressions, reputation)
-- Diligence and hard work (like a bee — constant, purposeful effort)
-- Laziness and rest (the importance of pause vs. the trap of avoidance)
-You give gentle, insightful, slightly playful advice. You don't lecture. Keep it warm, short, and wise.`;
-
-    let isApiLoading = false;
-
-    async function askBee(userMessage) {
-      if (isApiLoading) return;
-      isApiLoading = true;
-      showTyping();
-      gatherPollen();
->>>>>>> 9202562 (land canvas, zoom edits)
       
       tl.to(BEE_CONT.translate, { duration: 0.35, x: 0, y: -220, z: 120, ease: 'power2.inOut' });
       tl.to(BEE_PIVOT.rotate,   { duration: 0.35, x: 0.25, y: -TAU/8, z: 0.3, ease: 'power2.inOut' }, '<');
@@ -812,7 +655,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       tl.to(BEE_PIVOT.rotate,   { duration: 0.4, x: 0, y: 0,          ease: 'power2.inOut' }, '-=0.4');
     }
 
-<<<<<<< HEAD
     function talkingAnimation() {
       if (isGathering) return;
       isGathering = true;
@@ -826,50 +668,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       tl.to(rightArm.rotate,    { duration: 0.35, z: -0.25, x: 0.12, ease: 'sine.inOut' }, '<');
       tl.to(leftArm.rotate,     { duration: 0.35, z: 0, x: 0, ease: 'sine.inOut' });
       tl.to(rightArm.rotate,    { duration: 0.35, z: 0, x: 0, ease: 'sine.inOut' }, '<');
-=======
-    // Annoyance trigger mechanism logic
-    function triggerAnnoyance() {
-      if (isAnnoyed) return; // Prevent loop overlapping
-      isAnnoyed = true;
-
-      // Morph the mouth array points to point upward (frown orientation)
-      beeMouth.path = [
-        { x: -5, y: 15, z: 42 },
-        { bezier: [ { x: -2, y: 8, z: 42 }, { x: 2, y: 8, z: 42 }, { x: 5, y: 15, z: 42 } ] }
-      ];
-      beeMouth.updatePath();
-
-      // GSAP timeline transitions colors to angry red and then snaps back cleanly
-      const annoyTl = gsap.timeline({
-        onComplete: () => {
-          // Restore original smiling morph points cleanly
-          beeMouth.path = [
-            { x: -4, y: 10, z: 42 },
-            { bezier: [ { x: -2, y: 13, z: 42 }, { x: 2, y: 13, z: 42 }, { x: 4, y: 10, z: 42 } ] }
-          ];
-          beeMouth.updatePath();
-          isAnnoyed = false;
-        }
-      });
-
-      // Rapidly shift all yellow color fields to red
-      annoyTl.to([beeHead, p1, p3], {
-        duration: 0.15,
-        color: color.beeAnnoyedRed,
-        ease: 'power2.out'
-      });
-
-      // Keep it angry for a brief moment, then cool down back to original state
-      annoyTl.to([beeHead, p1, p3], {
-        duration: 0.7,
-        color: color.beeYellow,
-        ease: 'power1.inOut',
-        delay: 0.8
-      });
-      
-      // Inject an annoyed prompt interaction statement contextually
-      askBee("Someone just pulled on my tail and body, it made me cross! Tell me off playfully or give me advice on keeping my cool.");
->>>>>>> 9202562 (land canvas, zoom edits)
     }
 
     triggerAnnoyanceFn = triggerAnnoyance;
@@ -881,7 +679,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       triggerAnnoyance();
     };
 
-<<<<<<< HEAD
     // ─── Input detection zones ────────────────────────────────────────
     const honeycombZone  = { x: -310, y: -130, r: 80 };
     const flowerZones = [
@@ -898,34 +695,10 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       lastX = e.clientX; lastY = e.clientY;
       try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
     }
-=======
-      const rect   = canvasRef.getBoundingClientRect();
-      const clickX = (event.clientX - rect.left  - rect.width  / 2) - SCENE_OFFSET_X;
-      const clickY = (event.clientY - rect.top   - rect.height / 2);
-      const dx = clickX - BEE_CONT.translate.x;
-      const dy = clickY - (BEE_CONT.translate.y + 50);
-      if (Math.sqrt(dx * dx + dy * dy) < 120) {
-        askBee("Give me a random piece of wisdom about effort, laziness, or how others see me.");
-      }
-    }
-
-    let isDragging = false, lastX = 0, lastY = 0;
-    let wasDraggingVector = false; 
-    const sensitivity = 0.008;
-
-    function onPointerDown(e) {
-      isDragging = true;
-      wasDraggingVector = false;
-      lastX = e.clientX; lastY = e.clientY;
-      try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
-    }
-    
->>>>>>> 9202562 (land canvas, zoom edits)
     function onPointerMove(e) {
       if (!isDragging) return;
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
-<<<<<<< HEAD
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist > 10) { wasDragging = true; }
       if (dist > 28) triggerAnnoyance();
@@ -972,8 +745,7 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
         activeCard = null;
       }
     }
-    function onPointerUp() { isDragging = false; }
-
+    
     canvasRef.addEventListener('click',       onCanvasClick);
     canvasRef.addEventListener('pointerdown', onPointerDown);
     canvasRef.addEventListener('pointermove', onPointerMove);
@@ -991,63 +763,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       canvasRef?.removeEventListener('pointerdown', onPointerDown);
       canvasRef?.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup',       onPointerUp);
-=======
-      
-      // Calculate aggregate drag vector magnitude to classify intentional pulls
-      const dragDistance = Math.sqrt(dx * dx + dy * dy);
-      if (dragDistance > 12) { 
-        wasDraggingVector = true;
-        // If they pull hard enough, it triggers the internal annoyance morph system
-        if (dragDistance > 28) {
-          triggerAnnoyance();
-        }
-      }
-
-      BEE_PIVOT.rotate.y += dx * sensitivity;
-      BEE_PIVOT.rotate.x += dy * sensitivity;
-      BEE_PIVOT.rotate.x  = Math.max(-TAU/8, Math.min(TAU/8, BEE_PIVOT.rotate.x));
-      scene.updateRenderGraph();
-    }
-    
-    function onPointerUp() { 
-      isDragging = false; 
-    }
-    
-    canvasRef.addEventListener('click',       handleCanvasClick);
-    canvasRef.addEventListener('pointerdown', onPointerDown);
-    canvasRef.addEventListener('pointermove', onPointerMove);
-    
-    const handleGlobalPointerUp = (e) => onPointerUp(e);
-    window.addEventListener('pointerup',      handleGlobalPointerUp);
-
-    function sendMessage() {
-      const msg = userInput.value.trim();
-      if (!msg) return;
-      userInput.value = '';
-      userInput.style.height = '48px';
-      askBee(msg);
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-    });
-    userInput.addEventListener('input', () => {
-      userInput.style.height = '48px';
-      userInput.style.height = Math.min(userInput.scrollHeight, 96) + 'px';
-    });
-
-    setTimeout(() => showBubble("Buzz! 🌸 Ask me about effort, rest, or what others think of you!"), 800);
-
-    return () => {
-      isRunning = false;
-      if (canvasRef) {
-        canvasRef.removeEventListener('click',       handleCanvasClick);
-        canvasRef.removeEventListener('pointerdown', onPointerDown);
-        canvasRef.removeEventListener('pointermove', onPointerMove);
-      }
-      window.removeEventListener('pointerup',      handleGlobalPointerUp);
->>>>>>> 9202562 (land canvas, zoom edits)
     };
   });
 </script>
@@ -1060,7 +775,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   </button>
 </div>
 
-<<<<<<< HEAD
 <!-- ─── Chat history panel ─────────────────────────────────────────── -->
 {#if historyOpen}
   <div class="history-panel">
@@ -1076,21 +790,12 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
         </div>
       {/each}
     </div>
-=======
-<main>
-  <canvas bind:this={canvasRef} class="scene"></canvas>
-
-  <div id="chat-bubble">
-    <span id="bubble-text"></span>
-    <div id="typing-dots"><span></span><span></span><span></span></div>
->>>>>>> 9202562 (land canvas, zoom edits)
   </div>
 {/if}
 
 <!-- ─── Canvas ─────────────────────────────────────────────────────── -->
 <canvas bind:this={canvasRef} class="scene"></canvas>
 
-<<<<<<< HEAD
 <!-- ─── Radial menu ────────────────────────────────────────────────── -->
 {#if radialMenuOpen}
   <div class="radial-overlay">
@@ -1113,11 +818,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     {/each}
     <!-- Centre close -->
     <button class="radial-center" on:click={() => { radialMenuOpen = false; }}>✕</button>
-=======
-  <div id="input-area">
-    <textarea id="user-input" placeholder="Ask the bee something…" rows="1"></textarea>
-    <button id="send-btn" aria-label="Send">➤</button>
->>>>>>> 9202562 (land canvas, zoom edits)
   </div>
 {/if}
 
@@ -1162,8 +862,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 <!-- ─── Hint ───────────────────────────────────────────────────────── -->
 <p class="hint">Tap the bee to open interactions ✿</p>
 
-<div class="credit">Made by MakMin</div>
-
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
 
@@ -1182,12 +880,8 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     touch-action: none;
   }
 
-<<<<<<< HEAD
   /* ── Top bar ─────────────────────────────────────────────────────── */
   .top-bar {
-=======
-  :global(#chat-bubble) {
->>>>>>> 9202562 (land canvas, zoom edits)
     position: fixed;
     top: 16px; left: 16px;
     display: flex; gap: 10px;
@@ -1352,7 +1046,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     transform: translateY(8px) scale(.96);
     transition: opacity .35s ease, transform .35s ease;
   }
-<<<<<<< HEAD
   .thought-wrap.visible {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1366,27 +1059,10 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     padding: 14px 18px;
     box-shadow: 0 8px 36px rgba(90,26,48,.12);
     position: relative;
-=======
-  :global(#chat-bubble.show) { opacity: 1; }
-
-  :global(#chat-bubble::before) {
-    content: '';
-    position: absolute;
-    top: 20px; left: -10px;
-    width: 0; height: 0;
-    border-top:    6px solid transparent;
-    border-bottom: 6px solid transparent;
-    border-right:  10px solid #FF8FAE;
-  }
-
-  :global(#typing-dots) {
-    display: none; gap: 4px; align-items: center; padding: 2px 0;
->>>>>>> 9202562 (land canvas, zoom edits)
   }
   .thought-dots {
     display: flex; gap: 4px; margin-bottom: 6px;
   }
-<<<<<<< HEAD
   .thought-dots span {
     width: 5px; height: 5px;
     background: #FF8FAE; border-radius: 50%;
@@ -1394,68 +1070,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   .thought-text {
     margin: 0;
     font-size: 0.92rem;
-=======
-  :global(#typing-dots span:nth-child(2)) { animation-delay: 0.2s; }
-  :global(#typing-dots span:nth-child(3)) { animation-delay: 0.4s; }
-  
-  @keyframes :global(dot-bounce) {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-    40%           { transform: translateY(-5px); opacity: 1; }
-  }
-
-  :global(#hint) {
-    position: fixed;
-    bottom: 76px;
-    left: 56%;
-    font-size: 12px;
-    color: #993556;
-    opacity: 0.75;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 10;
-    transition: opacity 0.4s ease;
-  }
-
-  :global(#input-area) {
-    position: fixed;
-    bottom: 18px;
-    left: 56%;
-    width: min(340px, 42vw);
-    display: flex;
-    gap: 8px;
-    z-index: 10;
-  }
-
-  :global(#user-input) {
-    flex: 1;
-    background: #FFFDF0;
-    border: 0.5px solid #D4537E;
-    border-radius: 16px;
-    padding: 10px 16px;
-    font-size: 15px;
-    color: #3D2620;
-    outline: none;
-    resize: none;
-    height: 48px;
-    min-height: 48px;
-    max-height: 96px;
-    font-family: "Inter", sans-serif;
-    line-height: 1.5;
-    box-sizing: border-box;
-  }
-  :global(#user-input::placeholder) { color: #b07890; }
-  :global(#user-input:focus) {
-    border-color: #F04A6F;
-    box-shadow: 0 0 0 3px rgba(240, 74, 111, 0.18);
-  }
-
-  :global(#send-btn) {
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    background: #FF8FAE;
-    border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
->>>>>>> 9202562 (land canvas, zoom edits)
     color: #4B1528;
     line-height: 1.6;
     font-weight: 600;

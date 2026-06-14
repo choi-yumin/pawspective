@@ -4,6 +4,8 @@
   import Bee from './Bee.svelte';
   // import Chicken from './Chicken.svelte';
   import Blobfish from './Blobfish.svelte';
+  import Sloth from './Sloth.svelte';
+  import Dove from './Dove.svelte';
   let page = 'menu';
 
   function openPage(name) {
@@ -20,6 +22,9 @@
         <button class="page-btn" on:click={() => openPage('bee')}>Bee</button>
         <button class="page-btn" on:click={() => openPage('chicken')}>Chicken</button>
         <button class="page-btn" on:click={() => openPage('blobfish')}>Blobfish</button>
+        <button class="page-btn" on:click={() => openPage('sloth')}>Sloth</button>
+        <button class="page-btn" on:click={() => openPage('dove')}>Dove</button>
+
       </div>
     </div>
   {:else if page === 'land'}
@@ -30,6 +35,10 @@
     <Chicken on:back={() => openPage('menu')} />
   {:else if page === 'blobfish'}
     <Blobfish on:back={() => openPage('menu')} />
+  {:else if page === 'sloth'}
+    <Sloth on:back={() => openPage('menu')} />
+  {:else if page === 'dove'}
+    <Dove on:back={() => openPage('menu')} />
   {:else}
     <div class="menu-card placeholder">
       <h1>{page === 'page3' ? 'Page 3' : 'Page'}</h1>
