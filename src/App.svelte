@@ -2,7 +2,7 @@
   // @ts-nocheck
   import Land from './Land.svelte';
   import Bee from './Bee.svelte';
-  // import Chicken from './Chicken.svelte';
+  import Chicken from './Chicken.svelte';
   import Blobfish from './Blobfish.svelte';
   import Sloth from './Sloth.svelte';
   import Dove from './Dove.svelte';
