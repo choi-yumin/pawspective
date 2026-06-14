@@ -9,6 +9,7 @@
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 16;
   const ZOOM_EASE = 0.12;   // lower = slower zoom glide
+  const ZOOM_STEP = 1.06;   // zoom per wheel step (lower = slower)
   const SPIN_SPEED = 0.003;
 
   // reactive state (Svelte 5 runes)
@@ -49,7 +50,7 @@
     const o = cursorOffset(e);
     anchorX = o.x;
     anchorY = o.y;
-    const factor = e.deltaY < 0 ? 1.18 : 1 / 1.18;
+    const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
     targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom * factor));
   }
 
@@ -66,6 +67,7 @@
     illo = new Zdog.Illustration({
       element: canvas,
       dragRotate: true,
+      resize: 'window',
       zoom: 1,
       rotate: { x: -TAU/9, y: TAU/10 },
     });
@@ -103,23 +105,32 @@
   });
 </script>
 
-<div class="wrap">
-  <canvas
-    bind:this={canvas}
-    width="520"
-    height="520"
-    onpointerdown={handlePointerDown}
-  ></canvas>
-</div>
+<!-- full-viewport canvas — no surrounding container -->
+<canvas
+  bind:this={canvas}
+  on:pointerdown={handlePointerDown}
+  class="land-canvas"
+></canvas>
 
 <style>
-  .wrap {
-    display: flex;
-    justify-content: center;
+  :global(html, body) {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
   }
-  canvas {
-    background: transparent;
+  .land-canvas {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #f0f7fb; /* match app background to hide edges */
     cursor: grab;
     touch-action: none;
+    display: block;
+    border: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
 </style>
