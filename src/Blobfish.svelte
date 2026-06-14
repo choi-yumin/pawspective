@@ -53,22 +53,13 @@
 
   const interactionCards = [
     {
-      id: 'bully',
-      icon: '🤬',
-      label: 'Bully',
-      title: 'Bully the Fish',
-      description: 'Harsh words break through the water, turning the fish’s expressions visibly downcast.',
-      hint: 'Mouth drops into a deep sad frown and eyes tilt inward.',
-      angle: -90
-    },
-    {
       id: 'float',
       icon: '🔄',
       label: 'Float Around',
       title: 'Orbit Swimming',
       description: 'Command the blobfish to drift passively in a large horizontal tracking orbit.',
       hint: 'The fish will drift in a smooth, sweeping horizontal circle.',
-      angle: -30
+      angle: -90
     },
     {
       id: 'jump',
@@ -78,15 +69,6 @@
       description: 'Watch the fish break dynamics to launch an airborne trajectory arc.',
       hint: 'Jumps directly if shallow. If deep, it surfaces rapidly before launching.',
       angle: 30
-    },
-    {
-      id: 'feed',
-      icon: '🦐',
-      label: 'Feed',
-      title: 'Drop deep-sea shrimp',
-      description: 'Offer a small deep-sea crustacean to see the fish move excitedly forward.',
-      hint: 'Triggers the feeding lunging animation.',
-      angle: 90
     },
     {
       id: 'chat',
@@ -169,10 +151,8 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
   function executeCard() {
     if (!activeCard) return;
-    if (activeCard.id === 'bully') triggerBullyAnimation();
     if (activeCard.id === 'float') triggerFloatAnimation();
     if (activeCard.id === 'jump') triggerJumpAnimation();
-    if (activeCard.id === 'feed') triggerFeedAnimation();
     if (activeCard.id === 'chat') {
       activeCard = null;
       openReplyInput(); 
@@ -190,11 +170,9 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
     if (!canvasRef || !fishZone) return;
     const rect = canvasRef.getBoundingClientRect();
     
-    // Vector calculation mimicking Zdog layout matrices projecting down to screen vectors
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
-    // Track runtime offsets from animations to position the speech bubble cleanly next to the model
     fishScreenCoords = {
       x: centerX + fishZone.translate.x,
       y: centerY + fishZone.translate.y
@@ -303,35 +281,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
   let customTailSpeedFactor = 1;
   let expressionModifierActive = false;
 
-  function triggerBullyAnimation() {
-    if (isMeshRunningAnimation) return;
-    isMeshRunningAnimation = true;
-
-    const tl = gsap.timeline({
-      onComplete: () => { 
-        isMeshRunningAnimation = false; 
-      }
-    });
-
-    // Mouth only setup - morph scale downward into a sad drop downcast look
-    tl.to([mouth_pink.scale, mouth_blue.scale], {
-      duration: 0.4,
-      y: -1.6,
-      x: 0.85,
-      ease: 'sine.inOut'
-    }, 0);
-
-    // Dynamic recovery phase returning face to baseline standard shapes
-    tl.to([mouth_pink.scale, mouth_blue.scale], {
-      duration: 0.6,
-      y: 1,
-      x: 1,
-      delay: 5.0
-    });
-
-    askFish("You just said something deeply critical or mean to me... Respond with a vulnerable, sad thought about how words can pierce soft tissue.");
-  }
-
   function triggerFloatAnimation() {
     if (isMeshRunningAnimation) return;
     isMeshRunningAnimation = true;
@@ -347,7 +296,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
       }
     });
 
-    // Track a seamless 360 degree horizontal swimming circle orbit path 
     tl.to(fishZone.rotate, { duration: 3.5, y: `-=${Zdog.TAU}`, ease: 'none' });
     tl.to(fishZone.translate, { 
       duration: 1.75, 
@@ -375,31 +323,17 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
     });
 
     if (isDeep) {
-      // Phase 1: Rapidly ascend to background layout surface limits ("go afloat")
       tl.to(fishZone.translate, { duration: 1.2, y: -260, z: 40, ease: 'power2.out' });
       tl.to(fishZone.rotate, { duration: 0.8, x: -0.4 }, 0);
       
-      // Phase 2: Launch high breach dolphin jump sequence arc immediately after surfacing
       tl.to(fishZone.translate, { duration: 0.5, y: -500, z: 120, ease: 'power1.out' }, '+=0.1');
       tl.to(fishZone.rotate, { duration: 1.0, x: `+=${Zdog.TAU}`, ease: 'power1.inOut' }, '-=0.2');
       tl.to(fishZone.translate, { duration: 0.6, y: 0, z: 0, ease: 'power2.in' });
     } else {
-      // Shallow standard dolphin jump physics setup directly
       tl.to(fishZone.translate, { duration: 0.5, y: -240, z: 80, ease: 'power1.out' });
       tl.to(fishZone.rotate, { duration: 0.9, x: `+=${Zdog.TAU}`, ease: 'power1.inOut' }, 0);
       tl.to(fishZone.translate, { duration: 0.5, y: 0, z: 0, ease: 'power1.in' }, '-=0.4');
     }
-  }
-
-  function triggerFeedAnimation() {
-    if (isMeshRunningAnimation) return;
-    isMeshRunningAnimation = true;
-    const tl = gsap.timeline({ onComplete: () => { isMeshRunningAnimation = false; } });
-    
-    tl.to(fishZone.translate, { duration: 0.4, z: 80, y: '-=20', ease: 'power2.out' });
-    tl.to(fishZone.rotate, { duration: 0.3, x: 0.15, ease: 'power1.out' }, 0);
-    tl.to(fishZone.translate, { duration: 0.6, z: 0, y: '+=20', ease: 'power2.inOut' });
-    tl.to(fishZone.rotate, { duration: 0.5, x: 0, ease: 'power2.inOut' }, '-=0.4');
   }
 
   function triggerTalkingMotion() {
@@ -464,7 +398,8 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
     const fishRadiusThreshold = 145; 
     if (Math.hypot(cx, cy) < fishRadiusThreshold) {
-      toggleRadialMenu(e.clientX, e.clientY);
+      // Centering interactive layout elements directly on fish screen projection coordinates
+      toggleRadialMenu(fishScreenCoords.x, fishScreenCoords.y);
     }
   }
 
@@ -493,24 +428,24 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
     fishZone = new Zdog.Anchor({ addTo: scene });
 
     // --- Blobfish (Surface - Pink) ---
-    blobMasterAnchor = new Zdog.Anchor({ addTo: fishZone });
-    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 130, color: color.blobSkin });
-    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 90, color: color.blobSkin, translate: { y: -40, z: 6 } });
-    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 50, color: color.blobNose, translate: { y: 14, z: 62 } });
-    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 60, color: color.blobSkin, translate: { x: -38, y: 24, z: 18 } });
-    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 60, color: color.blobSkin, translate: { x: 38, y: 24, z: 18 } });
+    blobMasterAnchor = new Zdog.Anchor({ addTo: fishZone, scale: 2 });
+    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 260, color: color.blobSkin });
+    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 180, color: color.blobSkin, translate: { y: -40, z: 6 } });
+    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 100, color: color.blobNose, translate: { y: 14, z: 62 } });
+    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 120, color: color.blobSkin, translate: { x: -38, y: 24, z: 18 } });
+    new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 120, color: color.blobSkin, translate: { x: 38, y: 24, z: 18 } });
 
     eyeL_pink = new Zdog.Anchor({ addTo: blobMasterAnchor, translate: { x: -18, y: -14, z: 52 } });
-    new Zdog.Shape({ addTo: eyeL_pink, stroke: 15, color: '#FFFFFF' });
-    new Zdog.Shape({ addTo: eyeL_pink, stroke: 6, color: '#111111', translate: { z: 6 } });
+    new Zdog.Shape({ addTo: eyeL_pink, stroke: 30, color: '#FFFFFF' });
+    new Zdog.Shape({ addTo: eyeL_pink, stroke: 12, color: '#111111', translate: { z: 6 } });
 
     eyeR_pink = new Zdog.Anchor({ addTo: blobMasterAnchor, translate: { x: 18, y: -14, z: 52 } });
-    new Zdog.Shape({ addTo: eyeR_pink, stroke: 15, color: '#FFFFFF' });
-    new Zdog.Shape({ addTo: eyeR_pink, stroke: 6, color: '#111111', translate: { z: 6 } });
+    new Zdog.Shape({ addTo: eyeR_pink, stroke: 30, color: '#FFFFFF' });
+    new Zdog.Shape({ addTo: eyeR_pink, stroke: 12, color: '#111111', translate: { z: 6 } });
 
     mouth_pink = new Zdog.Shape({
       addTo: blobMasterAnchor,
-      stroke: 7,
+      stroke: 14,
       color: color.blobMouth,
       closed: false,
       path: [{ x: -28, y: 40, z: 44 }, { bezier: [{ x: -12, y: 28, z: 54 }, { x: 12, y: 28, z: 54 }, { x: 28, y: 40, z: 44 }] }]
@@ -520,35 +455,35 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
     leftPecContainer = new Zdog.Anchor({ addTo: blobMasterAnchor });
     const leftPecAnchor = new Zdog.Anchor({ addTo: leftPecContainer, translate: { x: -52, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: leftPecAnchor, path: finShapePath, stroke: 12, color: color.blobFin, fill: true });
+    new Zdog.Shape({ addTo: leftPecAnchor, path: finShapePath, stroke: 24, color: color.blobFin, fill: true });
 
     rightPecContainer = new Zdog.Anchor({ addTo: blobMasterAnchor });
     const rightPecAnchor = new Zdog.Anchor({ addTo: rightPecContainer, translate: { x: 52, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: rightPecAnchor, path: finShapePath, scale: { x: -1 }, stroke: 12, color: color.blobFin, fill: true });
+    new Zdog.Shape({ addTo: rightPecAnchor, path: finShapePath, scale: { x: -1 }, stroke: 24, color: color.blobFin, fill: true });
 
     const blobTail = new Zdog.Anchor({ addTo: blobMasterAnchor, translate: { y: 10, z: -68 } });
-    new Zdog.Shape({ addTo: blobTail, stroke: 26, color: color.blobTailBody });
+    new Zdog.Shape({ addTo: blobTail, stroke: 52, color: color.blobTailBody });
     blobTailFin = new Zdog.Anchor({ addTo: blobTail, translate: { z: -14 } });
-    new Zdog.Shape({ addTo: blobTailFin, stroke: 18, color: color.blobFin, closed: false, path: [{ y: 0, z: 0 }, { bezier: [{ x: -6, y: -8, z: -4 }, { x: -12, y: -12, z: -8 }, { x: 0, y: -18, z: -14 }] }] });
+    new Zdog.Shape({ addTo: blobTailFin, stroke: 32, color: color.blobFin, closed: false, path: [{ y: 0, z: 0 }, { bezier: [{ x: -6, y: -8, z: -4 }, { x: -12, y: -12, z: -8 }, { x: 0, y: -18, z: -14 }] }] });
 
     // --- Handsome Blobfish (Deep - Blue) ---
-    handsomeMasterAnchor = new Zdog.Anchor({ addTo: fishZone, scale: 1.5 });
-    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 120, color: color.blobDeepSea });
-    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 95, color: color.blobDeepSea, translate: { z: -30 } });
-    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 60, color: color.blobDeepSea, translate: { x: -28, y: 14, z: 12 } });
-    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 60, color: color.blobDeepSea, translate: { x: 28, y: 14, z: 12 } });
+    handsomeMasterAnchor = new Zdog.Anchor({ addTo: fishZone, scale: 3 });
+    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 240, color: color.blobDeepSea });
+    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 190, color: color.blobDeepSea, translate: { z: -30 } });
+    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 120, color: color.blobDeepSea, translate: { x: -28, y: 14, z: 12 } });
+    new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 120, color: color.blobDeepSea, translate: { x: 28, y: 14, z: 12 } });
 
     eyeL_blue = new Zdog.Anchor({ addTo: handsomeMasterAnchor, translate: { x: -22, y: -12, z: 25 } });
-    new Zdog.Shape({ addTo: eyeL_blue, stroke: 16, color: color.blobEyeDeep });
-    new Zdog.Shape({ addTo: eyeL_blue, stroke: 7, color: color.blobPupilDeep, translate: { z: 6 } });
+    new Zdog.Shape({ addTo: eyeL_blue, stroke: 32, color: color.blobEyeDeep });
+    new Zdog.Shape({ addTo: eyeL_blue, stroke: 14, color: color.blobPupilDeep, translate: { z: 6 } });
 
     eyeR_blue = new Zdog.Anchor({ addTo: handsomeMasterAnchor, translate: { x: 22, y: -12, z: 25 } });
-    new Zdog.Shape({ addTo: eyeR_blue, stroke: 16, color: color.blobEyeDeep });
-    new Zdog.Shape({ addTo: eyeR_blue, stroke: 7, color: color.blobPupilDeep, translate: { z: 6 } });
+    new Zdog.Shape({ addTo: eyeR_blue, stroke: 32, color: color.blobEyeDeep });
+    new Zdog.Shape({ addTo: eyeR_blue, stroke: 14, color: color.blobPupilDeep, translate: { z: 6 } });
 
     mouth_blue = new Zdog.Shape({
       addTo: handsomeMasterAnchor,
-      stroke: 5.5,
+      stroke: 11,
       color: color.blobMouthDeep,
       closed: false,
       path: [{ x: -18, y: 10, z: 25 }, { x: 0, y: 14, z: 27 }, { x: 18, y: 10, z: 25 }]
@@ -556,16 +491,16 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
     leftWingContainer = new Zdog.Anchor({ addTo: handsomeMasterAnchor });
     const leftWingFin = new Zdog.Anchor({ addTo: leftWingContainer, translate: { x: -48, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: leftWingFin, path: finShapePath, scale: { x: 0.666, y: 0.666, z: 0.666 }, stroke: 8, color: color.blobDeepSeaDark, fill: true });
+    new Zdog.Shape({ addTo: leftWingFin, path: finShapePath, scale: { x: 0.666, y: 0.666, z: 0.666 }, stroke: 16, color: color.blobDeepSeaDark, fill: true });
 
     rightWingContainer = new Zdog.Anchor({ addTo: handsomeMasterAnchor });
     const rightWingFin = new Zdog.Anchor({ addTo: rightWingContainer, translate: { x: 48, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: rightWingFin, path: finShapePath, scale: { x: -0.666, y: 0.666, z: 0.666 }, stroke: 8, color: color.blobDeepSeaDark, fill: true });
+    new Zdog.Shape({ addTo: rightWingFin, path: finShapePath, scale: { x: -0.666, y: 0.666, z: 0.666 }, stroke: 16, color: color.blobDeepSeaDark, fill: true });
 
     const handsomeTail = new Zdog.Anchor({ addTo: handsomeMasterAnchor, translate: { y: -4, z: -72 } });
-    new Zdog.Shape({ addTo: handsomeTail, stroke: 30, color: color.blobDeepSea });
+    new Zdog.Shape({ addTo: handsomeTail, stroke: 60, color: color.blobDeepSea });
     handsomeTailFin = new Zdog.Anchor({ addTo: handsomeTail, translate: { z: -14 } });
-    new Zdog.Shape({ addTo: handsomeTailFin, stroke: 40, color: color.blobDeepSeaDark, closed: false, path: [{ y: 0, z: 0 }, { bezier: [{ x: -6, y: -8, z: -5 }, { x: -14, y: -14, z: -9 }, { x: 0, y: -22, z: -14 }] }] });
+    new Zdog.Shape({ addTo: handsomeTailFin, stroke: 80, color: color.blobDeepSeaDark, closed: false, path: [{ y: 0, z: 0 }, { bezier: [{ x: -6, y: -8, z: -5 }, { x: -14, y: -14, z: -9 }, { x: 0, y: -22, z: -14 }] }] });
 
     pinkFadeShapes = setupFadeGroup(blobMasterAnchor);
     darkFadeShapes = setupFadeGroup(handsomeMasterAnchor);
@@ -679,7 +614,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
         fishZone.rotate.z = Math.cos(frame * 0.025) * 0.04;
       }
 
-      // Update screen coordinates dynamically to anchor UI alongside fish elements
       updateBubblePosition();
 
       pinkFadeShapes.forEach(({ node, r, g, b }) => {
@@ -706,7 +640,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
         s_blink = 0.5 + 0.5 * Math.cos(((blink - 262) / 18) * Math.PI * 2);
       }
       
-      // Prevent running standard blink cycle calculations if custom bully morph adjustments are active
       if (!expressionModifierActive) {
         eyeL_pink.scale.y = s_blink;
         eyeR_pink.scale.y = s_blink;
@@ -729,8 +662,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
       if (bubbleAutoHideTimer) clearTimeout(bubbleAutoHideTimer);
       window.removeEventListener('resize', resizeOverlay);
     };
-
-    
   });
 
   function handleDiveToggle() {
