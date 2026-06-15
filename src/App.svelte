@@ -12,7 +12,6 @@
     page = name;
   }
 </script>
-
 <div class="app-shell">
   {#if page === 'menu'}
     <div class="menu-card">
