@@ -3,9 +3,12 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import Zdog from 'zdog';
   import { gsap } from 'gsap';
+  import ChickenBackground from './ChickenBackground.svelte';
 
   const dispatch = createEventDispatcher();
   let canvasRef;
+
+  export let embedded = false;
 
   let radialMenuOpen = false;
   let activeCard = null;
@@ -93,72 +96,9 @@
     };
 
     const scene = new Zdog.Illustration({ element: canvasRef, dragRotate: false, resize: 'window' });
-    const staticGroup = new Zdog.Anchor({ addTo: scene });
+    // background is rendered in ChickenBackground.svelte
 
-    // ─── Sky ────────────────────────────────────────────────────────
-    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: -1500 }, { x: 3000, y: -1500 }, { x: 3000, y: 180 }, { x: -3000, y: 180 }], stroke: 0, fill: true, color: color.sky, translate: { z: -1500 } });
-    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 180 }, { x: 3000, y: 180 }, { x: 3000, y: 1600 }, { x: -3000, y: 1600 }], stroke: 0, fill: true, color: color.skyLight, translate: { z: -1500 } });
-
-    // ─── Rolling hills ──────────────────────────────────────────────
-    function addHill(x, w, col, z, amp = 220) {
-      const pts = [{ x: x - w / 2, y: 520 }];
-      for (let i = 0; i <= 24; i++) {
-        const t = i / 24;
-        pts.push({ x: x - w / 2 + t * w, y: 520 - Math.sin(t * Math.PI) * amp });
-      }
-      pts.push({ x: x + w / 2, y: 520 });
-      new Zdog.Shape({ addTo: staticGroup, path: pts, stroke: 0, fill: true, color: col, translate: { z } });
-    }
-    addHill(-900, 1600, color.darkGreen, -1200, 260);
-    addHill(800,  1500, '#4A7020',       -1100, 220);
-    addHill(-300, 1300, '#5A8A28',       -1000, 180);
-    addHill(400,  1000, '#6BA330',       -900,  140);
-
-    // ─── Ground plane (so flowers/chicken sit on grass, not hills) ───
-    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 340 }, { x: 3000, y: 340 }, { x: 3000, y: 1800 }, { x: -3000, y: 1800 }], stroke: 0, fill: true, color: color.land, translate: { z: -700 } });
-    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 340 }, { x: 3000, y: 340 }, { x: 3000, y: 400 }, { x: -3000, y: 400 }], stroke: 0, fill: true, color: color.landLight, translate: { z: -690 } });
-
-    // ─── Clouds ─────────────────────────────────────────────────────
-    [
-      { x: -750, y: -400, z: -1100, s: 2.0 },
-      { x: -200, y: -480, z: -1150, s: 1.6 },
-      { x:  650, y: -380, z: -1050, s: 2.2 },
-      { x:  250, y: -450, z: -1120, s: 1.7 },
-      { x:  950, y: -420, z: -1180, s: 1.4 }
-    ].forEach(p => {
-      const c = new Zdog.Anchor({ addTo: staticGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: c, stroke: 150, color: color.cloudPink });
-      new Zdog.Shape({ addTo: c, stroke: 115, color: color.cloudWhite, translate: { x: -90, y: 15 } });
-      new Zdog.Shape({ addTo: c, stroke: 125, color: color.cloudPink,  translate: { x:  90, y:  8 } });
-      new Zdog.Shape({ addTo: c, stroke:  95, color: color.cloudWhite, translate: { x: -150, y: 22 } });
-      new Zdog.Shape({ addTo: c, stroke:  85, color: color.cloudPink,  translate: { x: 160, y: 18 } });
-    });
-
-    // ─── Trees (kept to the sides/back) ──────────────────────────────
-    [
-      { x: -750, y: 210, z: -850, s: 1.8, type: 'apples'   },
-      { x: -500, y: 240, z: -800, s: 1.4, type: 'blossoms' },
-      { x:  650, y: 220, z: -860, s: 1.9, type: 'apples'   },
-      { x:  850, y: 260, z: -780, s: 1.5, type: 'blossoms' }
-    ].forEach(p => {
-      const t = new Zdog.Anchor({ addTo: staticGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: t, path: [{ y: 0 }, { y: -120 }], stroke: 30, color: color.trunkBrown });
-      const fGroup = new Zdog.Anchor({ addTo: t, translate: { y: -150 } });
-      new Zdog.Shape({ addTo: fGroup, stroke: 200, color: '#5DA020' });
-      new Zdog.Shape({ addTo: fGroup, stroke: 160, color: '#7CBF37', translate: { x: -40, y: -40, z: 15 } });
-      new Zdog.Shape({ addTo: fGroup, stroke: 140, color: '#4A8516', translate: { x: 45,  y: 25,  z: -15 } });
-      if (p.type === 'apples') {
-        new Zdog.Shape({ addTo: fGroup, stroke: 20, color: color.appleRed, translate: { x: -35, y: 15,  z: 80 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 20, color: color.appleRed, translate: { x:  50, y: -30, z: 65 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 18, color: color.appleRed, translate: { x:   8, y: 50,  z: 70 } });
-      } else {
-        new Zdog.Shape({ addTo: fGroup, stroke: 22, color: color.blossomPink, translate: { x: -50, y: -20, z: 70 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 22, color: color.blossomPink, translate: { x:  35, y: 30,  z: 80 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 18, color: color.blossomPink, translate: { x:  -8, y: -60, z: 60 } });
-      }
-    });
-
-    // ─── Flower helpers (matching the bee scene's garden style) ──────
+    // ─── Flower clusters — pushed to either side, away from the chicken ─
     function createDaisy(parent, x, y, z, scale, stemLen, rotX, rotY, petalCol) {
       petalCol = petalCol || color.daisyWhite;
       const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (120 - stemLen), z }, scale });
@@ -219,26 +159,11 @@
       }
     }
 
-    // ─── Flower clusters — pushed to either side, away from the chicken ─
-    const flowerGroup = new Zdog.Anchor({ addTo: staticGroup, translate: { x: 0, y: 0, z: 0 } });
-
-    // Left cluster
-    createSunflower(flowerGroup, -620, 400, 10,  5.5, 150, -TAU/4.5, 0.2);
-    createDaisy(flowerGroup,     -480, 390, 40,  5.0, 130, -TAU/4,   -0.2, color.daisyWhite);
-    createTulip(flowerGroup,     -560, 370, -30, 6.0, 110, -TAU/4,   0.4, color.tulipPink);
-    createRose(flowerGroup,      -420, 380, 70,  5.0, 120, -TAU/4.2, -0.3);
-    createLavender(flowerGroup,  -680, 410, -10, 5.0, 160, -TAU/5,   0.3);
-
-    // Right cluster
-    createTulip(flowerGroup,      480, 375, -20, 6.0, 110, -TAU/4,   -0.3, color.tulipOrange);
-    createDaisy(flowerGroup,      560, 395, 50,  5.0, 135, -TAU/4,   0.25, '#FFE4F0');
-    createSunflower(flowerGroup,  420, 405, 10,  5.5, 150, -TAU/4.5, -0.15);
-    createRose(flowerGroup,       650, 385, -40, 5.0, 125, -TAU/4.2, 0.3);
-    createLavender(flowerGroup,   380, 415, 70,  5.0, 160, -TAU/5,   -0.25);
+    // background elements are handled in ChickenBackground.svelte
 
     // ─── Chicken ──────────────────────────────────────────────────────
     let chickenLeftEyeGroup, chickenRightEyeGroup, cEyeLeftPupil, cEyeRightPupil, glassesAnchor, rightHand, chickenFinger;
-    const chicken = new Zdog.Anchor({ addTo: staticGroup, translate: { x: 0, y: 70, z: 0 }, rotate: { x: -0.05, y: 0, z: 0 } });
+    const chicken = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 70, z: 0 }, rotate: { x: -0.05, y: 0, z: 0 } });
 
     let bodyLower = new Zdog.Shape({ addTo: chicken, stroke: 270, color: color.body, translate: { y: 75 } });
     new Zdog.Cylinder({ addTo: chicken, diameter: 72, length: 150, stroke: 36, color: '#F6D8C8', rotate: { x: TAU/4 }, translate: { y: -45, z: 18 } });
@@ -467,31 +392,40 @@
       }
     }
 
-    canvasRef.addEventListener('pointerdown', onPointerDown);
-    canvasRef.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    canvasRef.addEventListener('click', handleClick);
+    if (!embedded) {
+      canvasRef.addEventListener('pointerdown', onPointerDown);
+      canvasRef.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      canvasRef.addEventListener('click', handleClick);
+    }
 
     return () => {
       isRunning = false;
-      canvasRef?.removeEventListener('pointerdown', onPointerDown);
-      canvasRef?.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      canvasRef?.removeEventListener('click', handleClick);
+      if (!embedded) {
+        canvasRef?.removeEventListener('pointerdown', onPointerDown);
+        canvasRef?.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        canvasRef?.removeEventListener('click', handleClick);
+      }
     };
   });
 </script>
 
 <!-- ─── Top bar ──────────────────────────────────────────────────────── -->
-<div class="top-bar">
-  <button class="bar-btn" on:click={goHome}>← Home</button>
-</div>
+{#if !embedded}
+  <div class="top-bar">
+    <button class="bar-btn" on:click={goHome}>← Home</button>
+  </div>
+{/if}
 
 <!-- ─── Canvas ─────────────────────────────────────────────────────── -->
-<canvas bind:this={canvasRef} class="scene"></canvas>
+{#if !embedded}
+  <ChickenBackground />
+{/if}
+<canvas bind:this={canvasRef} class="scene" class:embedded></canvas>
 
 <!-- ─── Radial menu ────────────────────────────────────────────────── -->
-{#if radialMenuOpen}
+{#if !embedded && radialMenuOpen}
   <div class="radial-overlay">
     {#each interactionCards as card, i}
       {@const angle = (i / interactionCards.length) * 360 - 90}
@@ -547,8 +481,15 @@
   canvas.scene {
     position: fixed; inset: 0;
     width: 100vw; height: 100vh;
-    display: block; z-index: 0;
+    display: block; z-index: 1;
     touch-action: none;
+  }
+
+  canvas.scene.embedded {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    inset: 0;
   }
 
   /* ── Top bar ─────────────────────────────────────────────────────── */

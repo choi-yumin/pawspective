@@ -3,9 +3,12 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import Zdog from 'zdog';
   import { gsap } from 'gsap';
+  import DoveBackground from './DoveBackground.svelte';
 
   const dispatch = createEventDispatcher();
   let canvasRef;
+
+  export let embedded = false;
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -246,44 +249,8 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       rotate: { x: -0.1, y: 0.18, z: 0 },
       zoom: 1.0
     });
+    // background is rendered in DoveBackground.svelte
 
-    // ─── Sky ───────────────────────────────────────────────────────────
-    const envGroup = new Zdog.Anchor({ addTo: scene });
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2200, y: -1200 }, { x: 2200, y: -1200 }, { x: 2200, y: 0 }, { x: -2200, y: 0 }],
-      stroke: 0, fill: true, color: C.skyTop, translate: { z: -860 }
-    });
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2200, y: 0 }, { x: 2200, y: 0 }, { x: 2200, y: 1000 }, { x: -2200, y: 1000 }],
-      stroke: 0, fill: true, color: C.skyLow, translate: { z: -860 }
-    });
-    // soft sun glow
-    new Zdog.Shape({ addTo: envGroup, stroke: 360, color: C.sun, translate: { x: 520, y: -260, z: -840 } });
-
-    // drifting clouds
-    [
-      { x: -460, y: -250, z: -560, s: 1.3 },
-      { x: -120, y: -320, z: -640, s: 0.9 },
-      { x:  380, y: -210, z: -520, s: 1.5 },
-      { x:  120, y: -300, z: -600, s: 1.0 },
-      { x:  760, y: -270, z: -640, s: 1.2 }
-    ].forEach(p => {
-      const c = new Zdog.Anchor({ addTo: envGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: c, stroke: 100, color: C.cloud });
-      new Zdog.Shape({ addTo: c, stroke: 76, color: C.cloudDim, translate: { x: -58, y: 12 } });
-      new Zdog.Shape({ addTo: c, stroke: 82, color: C.cloud,    translate: { x:  56, y:  6 } });
-      new Zdog.Shape({ addTo: c, stroke: 64, color: C.cloudDim, translate: { x: -98, y: 16 } });
-    });
-
-    // a couple of distant birds (tiny V's) for atmosphere
-    [{ x: -300, y: -360, z: -700 }, { x: -240, y: -340, z: -700 }, { x: 600, y: -380, z: -720 }].forEach(p => {
-      const b = new Zdog.Anchor({ addTo: envGroup, translate: p, scale: 0.5 });
-      new Zdog.Shape({ addTo: b, path: [{ x: -14, y: 6 }, { x: 0, y: 0 }, { x: 14, y: 6 }], stroke: 3, color: '#9FB4C6', closed: false });
-    });
-
-    // ─── Foreground: the dove ──────────────────────────────────────────
     const fg = new Zdog.Anchor({ addTo: scene });
     const DOVE_CONT = new Zdog.Anchor({ addTo: fg, translate: { x: 0, y: 0, z: 0 }, scale: 1.35 });
     const PIVOT = new Zdog.Anchor({ addTo: DOVE_CONT });
@@ -532,36 +499,44 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       }
     }
 
-    canvasRef.addEventListener('click',       onCanvasClick);
-    canvasRef.addEventListener('pointerdown', onPointerDown);
-    canvasRef.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup',      onPointerUp);
+    if (!embedded) {
+      canvasRef.addEventListener('click',       onCanvasClick);
+      canvasRef.addEventListener('pointerdown', onPointerDown);
+      canvasRef.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup',      onPointerUp);
+    }
 
-    setTimeout(() => showThought("Coo… the sky is calm today. 🕊️ What is on your mind?"), 3500);
-    scheduleThought();
+    if (!embedded) {
+      setTimeout(() => showThought("Coo… the sky is calm today. 🕊️ What is on your mind?"), 3500);
+      scheduleThought();
+    }
 
     return () => {
       isRunning = false;
       if (thoughtTimer) clearTimeout(thoughtTimer);
       if (bubbleAutoHideTimer) clearTimeout(bubbleAutoHideTimer);
-      canvasRef?.removeEventListener('click',       onCanvasClick);
-      canvasRef?.removeEventListener('pointerdown', onPointerDown);
-      canvasRef?.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup',       onPointerUp);
+      if (!embedded) {
+        canvasRef?.removeEventListener('click',       onCanvasClick);
+        canvasRef?.removeEventListener('pointerdown', onPointerDown);
+        canvasRef?.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup',       onPointerUp);
+      }
     };
   });
 </script>
 
 <!-- ─── Top bar ──────────────────────────────────────────────────────── -->
-<div class="top-bar">
-  <button class="bar-btn" on:click={goHome}>← Home</button>
-  <button class="bar-btn" on:click={toggleHistory}>
-    {historyOpen ? 'Close history' : '💬 History'}
-  </button>
-</div>
+{#if !embedded}
+  <div class="top-bar">
+    <button class="bar-btn" on:click={goHome}>← Home</button>
+    <button class="bar-btn" on:click={toggleHistory}>
+      {historyOpen ? 'Close history' : '💬 History'}
+    </button>
+  </div>
+{/if}
 
 <!-- ─── Chat history panel ─────────────────────────────────────────── -->
-{#if historyOpen}
+{#if !embedded && historyOpen}
   <div class="history-panel">
     <div class="history-header">
       <h2>Session chat</h2>
@@ -579,10 +554,13 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
 {/if}
 
 <!-- ─── Canvas ─────────────────────────────────────────────────────── -->
-<canvas bind:this={canvasRef} class="scene"></canvas>
+{#if !embedded}
+  <DoveBackground />
+{/if}
+<canvas bind:this={canvasRef} class="scene" class:embedded></canvas>
 
 <!-- ─── Radial menu ────────────────────────────────────────────────── -->
-{#if radialMenuOpen}
+{#if !embedded && radialMenuOpen}
   <div class="radial-overlay">
     {#each interactionCards as card, i}
       {@const angle = (i / interactionCards.length) * 360 - 90}
@@ -662,8 +640,15 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   canvas.scene {
     position: fixed; inset: 0;
     width: 100vw; height: 100vh;
-    display: block; z-index: 0;
+    display: block; z-index: 1;
     touch-action: none;
+  }
+
+  canvas.scene.embedded {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    inset: 0;
   }
 
   /* ── Top bar ─────────────────────────────────────────────────────── */

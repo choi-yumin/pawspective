@@ -1,11 +1,13 @@
 <script>
   //@ts-nocheck
-  import { onMount, createEventDispatcher } from 'svelte';
-  import Zdog from 'zdog';
-  import { gsap } from 'gsap';
+import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+import Zdog from 'zdog';
+import { gsap } from 'gsap';
+import BeeBackground from './BeeBackground.svelte';
 
-  const dispatch = createEventDispatcher();
-  let canvasRef;
+export let embedded = false;
+let canvasRef;
+let pageBodyClass = 'bee-page';
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -215,6 +217,7 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   }
 
   onMount(() => {
+    if (!embedded) document.body.classList.add(pageBodyClass);
     if (!canvasRef) return;
     const TAU = Zdog.TAU;
 
@@ -256,255 +259,11 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     // the right side is free for the chat UI.
     const SCENE_OFFSET_X = -180;
 
-    const envGroup = new Zdog.Anchor({ addTo: scene });
-
-    // Sky gradient panels
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2000, y: -1000 }, { x: 2000, y: -1000 }, { x: 2000, y: 0 }, { x: -2000, y: 0 }],
-      stroke: 0, fill: true, color: '#FFB7D5', translate: { z: -800 }
-    });
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2000, y: 0 }, { x: 2000, y: 0 }, { x: 2000, y: 600 }, { x: -2000, y: 600 }],
-      stroke: 0, fill: true, color: '#FFE1F0', translate: { z: -800 }
-    });
-
-    function addHill(x, w, col, z, amp = 160) {
-      const pts = [{ x: x - w / 2, y: 300 }];
-      for (let i = 0; i <= 24; i++) {
-        const t = i / 24;
-        pts.push({ x: x - w / 2 + t * w, y: 300 - Math.sin(t * Math.PI) * amp });
-      }
-      pts.push({ x: x + w / 2, y: 300 });
-      new Zdog.Shape({ addTo: envGroup, path: pts, stroke: 0, fill: true, color: col, translate: { z } });
-    }
-
-    addHill(-600, 900, color.darkGreen, -700, 160);
-    addHill(500,  800, '#4a7020',       -700, 160);
-    addHill(-200, 700, '#5a8a28',       -680, 150);
-    addHill(900,  700, '#3d6a18',       -720, 170);
-
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2000, y: 220 }, { x: 2000, y: 220 }, { x: 2000, y: 800 }, { x: -2000, y: 800 }],
-      stroke: 0, fill: true, color: color.land, translate: { z: -500 }
-    });
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2000, y: 220 }, { x: 2000, y: 220 }, { x: 2000, y: 260 }, { x: -2000, y: 260 }],
-      stroke: 0, fill: true, color: color.landLight, translate: { z: -490 }
-    });
-
-    // Clouds
-    [
-      { x: -420, y: -280, z: -420, s: 1.2 },
-      { x: -160, y: -310, z: -510, s: 0.9 },
-      { x:  360, y: -220, z: -380, s: 1.4 },
-      { x:   80, y: -290, z: -460, s: 1.0 },
-      { x:  700, y: -260, z: -500, s: 1.1 }
-    ].forEach(p => {
-      const c = new Zdog.Anchor({ addTo: envGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: c, stroke: 95, color: color.cloudPink });
-      new Zdog.Shape({ addTo: c, stroke: 72, color: color.cloudWhite, translate: { x: -55, y: 10 } });
-      new Zdog.Shape({ addTo: c, stroke: 78, color: color.cloudPink,  translate: { x:  55, y:  5 } });
-      new Zdog.Shape({ addTo: c, stroke: 62, color: color.cloudWhite, translate: { x: -95, y: 15 } });
-      new Zdog.Shape({ addTo: c, stroke: 58, color: color.cloudPink,  translate: { x: 100, y: 12 } });
-    });
-
-    // Trees
-    [
-      { x: -560, y: 140, z: -320, s: 1.0 },
-      { x: -380, y: 160, z: -260, s: 0.8 },
-      { x:  460, y: 150, z: -370, s: 1.2 },
-      { x:  580, y: 170, z: -220, s: 0.85 },
-      { x:  740, y: 145, z: -300, s: 0.9 },
-      { x: -680, y: 155, z: -340, s: 1.0 }
-    ].forEach(p => {
-      const t = new Zdog.Anchor({ addTo: envGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: t, path: [{ y: 0 }, { y: -90 }], stroke: 18, color: color.trunkBrown });
-      new Zdog.Shape({ addTo: t, stroke: 130, color: color.darkGreen, translate: { y: -130 } });
-      new Zdog.Shape({ addTo: t, stroke: 100, color: color.leafGreen, translate: { y: -175, x: -20 } });
-      new Zdog.Shape({ addTo: t, stroke: 90, color: '#7fcf38', translate: { y: -185, x: 20 } });
-    });
-
-    // ─── Flower helpers ────────────────────────────────────────────────
-    const fgGroup = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 50, z: 120 } });
-
-    // ── Right-side flower group (world-space, no offset) ─────────────────────
-    // These flowers appear in the right portion of the screen behind the chat UI,
-    // peeking in from the edges and bottom — same Zdog style but placed at +x.
-    const rgGroup = new Zdog.Anchor({
-      addTo: scene,
-      translate: { x: 260, y: 50, z: 120 }
-    });
-
-    // ── Flower factory functions ─────────────────────────────────────────────
-    function createDaisy(parent, x, y, z, scale, stemLen, rotX, rotY, petalCol) {
-      petalCol = petalCol || color.daisyWhite;
-      const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (120 - stemLen), z }, scale });
-      new Zdog.Shape({ addTo: fg, path: [{ x: 0, y: stemLen, z: 0 }, { x: 0, y: 0, z: 0 }], stroke: 7, color: color.leafGreen });
-      const hd = new Zdog.Anchor({ addTo: fg, rotate: { x: rotX, y: rotY } });
-      for (let i = 0; i < 13; i++) {
-        const ph = new Zdog.Anchor({ addTo: hd, rotate: { z: (TAU / 13) * i } });
-        new Zdog.Ellipse({ addTo: ph, width: 11, height: 30, fill: true, color: petalCol, stroke: 0, translate: { y: -18 } });
-      }
-      new Zdog.Ellipse({ addTo: hd, diameter: 15, fill: true, stroke: 4, color: color.daisyYellow, translate: { z: 1.5 } });
-    }
-
-    function createRose(parent, x, y, z, scale, stemLen, rotX, rotY) {
-      const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (140 - stemLen), z }, scale });
-      new Zdog.Shape({ addTo: fg, path: [{ x: 0, y: stemLen }, { x: 0, y: 0 }], stroke: 7, color: color.leafGreen });
-      const hd = new Zdog.Anchor({ addTo: fg, rotate: { x: rotX, y: rotY } });
-      for (let l = 0; l < 3; l++) {
-        const pc = 6 + l * 2, r = 10 + l * 9;
-        for (let i = 0; i < pc; i++) {
-          const a = (TAU / pc) * i + l * 0.3;
-          const ph = new Zdog.Anchor({ addTo: hd, translate: { x: Math.cos(a) * r, y: Math.sin(a) * r } });
-          new Zdog.Ellipse({ addTo: ph, width: l === 0 ? 8 : 10 + l * 2, height: l === 0 ? 12 : 14 + l * 3, fill: true, color: l === 0 ? color.roseRed : color.rosePink, stroke: 0, rotate: { z: a } });
-        }
-      }
-      new Zdog.Ellipse({ addTo: hd, diameter: 8, fill: true, stroke: 0, color: '#c0243a', translate: { z: 1 } });
-    }
-
-    function createLavender(parent, x, y, z, scale, stemLen, rotX, rotY) {
-      const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (150 - stemLen), z }, scale });
-      new Zdog.Shape({ addTo: fg, path: [{ x: 0, y: stemLen }, { x: 0, y: 0 }], stroke: 6, color: color.leafGreen });
-      const hd = new Zdog.Anchor({ addTo: fg, rotate: { x: rotX, y: rotY } });
-      for (let i = 0; i < 8; i++) {
-        const ph = new Zdog.Anchor({ addTo: hd, translate: { x: 0, y: -i * 10 }, rotate: { z: i % 2 === 0 ? 0.3 : -0.3 } });
-        new Zdog.Ellipse({ addTo: ph, width: 9, height: 14, fill: true, color: i < 3 ? color.lavPurple : color.lavLight, stroke: 0, translate: { x: 6 } });
-        new Zdog.Ellipse({ addTo: ph, width: 9, height: 14, fill: true, color: i < 3 ? color.lavPurple : color.lavLight, stroke: 0, translate: { x: -6 } });
-      }
-    }
-
-    function createSunflower(parent, x, y, z, scale, stemLen, rotX, rotY) {
-      const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (160 - stemLen), z }, scale });
-      new Zdog.Shape({ addTo: fg, path: [{ x: 0, y: stemLen }, { x: 0, y: 0 }], stroke: 9, color: color.leafGreen });
-      const hd = new Zdog.Anchor({ addTo: fg, rotate: { x: rotX, y: rotY } });
-      for (let i = 0; i < 18; i++) {
-        const ph = new Zdog.Anchor({ addTo: hd, rotate: { z: (TAU / 18) * i } });
-        new Zdog.Ellipse({ addTo: ph, width: 13, height: 36, fill: true, color: color.sunflowerY, stroke: 0, translate: { y: -24 } });
-      }
-      new Zdog.Ellipse({ addTo: hd, diameter: 22, fill: true, stroke: 5, color: color.sunflowerC, translate: { z: 2 } });
-    }
-
-    function createTulip(parent, x, y, z, scale, stemLen, rotX, rotY, col) {
-      col = col || color.tulipPink;
-      const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (130 - stemLen), z }, scale });
-      new Zdog.Shape({ addTo: fg, path: [{ x: 0, y: stemLen }, { x: 0, y: 0 }], stroke: 8, color: color.leafGreen });
-      const hd = new Zdog.Anchor({ addTo: fg, rotate: { x: rotX, y: rotY } });
-      for (let i = 0; i < 6; i++) {
-        const a = (TAU / 6) * i;
-        new Zdog.Ellipse({ addTo: hd, width: 18, height: 36, fill: true, color: col, stroke: 0, translate: { x: Math.cos(a) * 10, z: Math.sin(a) * 10 }, rotate: { y: a, x: -0.3 } });
-      }
-    }
-
-    // ─── Honeycomb – placed prominently in the scene ───────────────────
-    const honeycombGroup = new Zdog.Anchor({ addTo: fgGroup, translate: { x: -310, y: -180, z: -60 } });
-
-    // Hanging string
-    new Zdog.Shape({
-      addTo: honeycombGroup,
-      path: [{ x: 0, y: -80 }, { x: 0, y: -30 }],
-      stroke: 5, color: color.trunkBrown
-    });
-
-    // Outer drip for honey feel
-    new Zdog.Shape({
-      addTo: honeycombGroup,
-      stroke: 14, color: '#E8A800',
-      translate: { x: 12, y: 46 }
-    });
-
-    const hexCoords = [
-      { x: 0,    y: 0   },
-      { x: 0,    y: -38 },
-      { x: -33,  y: -19 },
-      { x:  33,  y: -19 },
-      { x: -33,  y:  19 },
-      { x:  33,  y:  19 },
-      { x: 0,    y:  38 }
-    ];
-    hexCoords.forEach((pos, i) => {
-      new Zdog.Polygon({
-        addTo: honeycombGroup,
-        sides: 6,
-        radius: 17,
-        fill: true,
-        stroke: 9,
-        color: i % 2 === 0 ? color.honeyGold : '#EDAB20',
-        translate: { x: pos.x, y: pos.y, z: i % 2 === 0 ? 5 : 0 },
-        rotate: { z: TAU / 12 }
-      });
-      // Cell inner shading
-      new Zdog.Polygon({
-        addTo: honeycombGroup,
-        sides: 6,
-        radius: 10,
-        fill: true,
-        stroke: 0,
-        color: '#D4920A',
-        translate: { x: pos.x, y: pos.y, z: i % 2 === 0 ? 8 : 3 },
-        rotate: { z: TAU / 12 }
-      });
-    });
-
-    // ─── Scatter flowers ───────────────────────────────────────────────
-    const flowers = [
-      // Far left edge
-      { f: 'd', x: -750, y: 140, z:  20, s: 4.8, len: 120, rx: -TAU/4,   ry:  0.3,  c: color.daisyWhite },
-      { f: 't', x: -680, y: 155, z:  60, s: 5.0, len: 115, rx: -TAU/4.2, ry: -0.2,  c: color.tulipPink },
-      { f: 'r', x: -620, y: 130, z: -40, s: 4.6, len: 110, rx: -TAU/3.8, ry:  0.1  },
-      { f: 's', x: -580, y: 165, z:  80, s: 4.5, len: 105, rx: -TAU/3.6, ry: -0.3  },
-      { f: 'l', x: -530, y: 145, z: 100, s: 5.2, len: 170, rx: -TAU/5,   ry: -0.5  },
-      { f: 'd', x: -480, y: 150, z:  30, s: 4.7, len: 125, rx: -TAU/4,   ry:  0.2,  c: '#FFE4F0' },
-      { f: 't', x: -420, y: 135, z: -80, s: 5.3, len: 120, rx: -TAU/4.3, ry:  0.4,  c: color.tulipOrange },
-      
-      // Left side
-      { f: 'r', x: -360, y: 140, z:  50, s: 4.8, len: 115, rx: -TAU/4.4, ry: -0.2  },
-      { f: 'd', x: -310, y: 125, z: -100, s: 4.9, len: 130, rx: -TAU/3.8, ry:  0.15, c: '#fff0fb' },
-      { f: 's', x: -260, y: 155, z:  70, s: 4.4, len: 110, rx: -TAU/3.5, ry:  0.25 },
-      { f: 'l', x: -200, y: 140, z:  45, s: 5.1, len: 165, rx: -TAU/4.8, ry: -0.35 },
-      { f: 't', x: -140, y: 160, z: 120, s: 5.0, len: 100, rx: -TAU/4.5, ry:  0.3,  c: '#ff85a2' },
-      
-      // Center-left
-      { f: 'd', x:  -80, y: 145, z:  80, s: 4.6, len: 115, rx: -TAU/4,   ry:  0.1,  c: color.daisyWhite },
-      { f: 'r', x:  -20, y: 130, z: -50, s: 4.7, len: 120, rx: -TAU/3.9, ry: -0.1  },
-      
-      // Center (sparse)
-      { f: 's', x:   60, y: 155, z:  90, s: 4.5, len: 105, rx: -TAU/3.7, ry:  0.2  },
-      { f: 'd', x:  140, y: 140, z:  40, s: 5.0, len: 125, rx: -TAU/4,   ry: -0.25, c: '#FFE4F0' },
-      
-      // Center-right
-      { f: 't', x:  210, y: 150, z: 110, s: 5.2, len: 115, rx: -TAU/4.2, ry:  0.35, c: color.tulipPink },
-      { f: 'l', x:  280, y: 135, z:  60, s: 4.8, len: 160, rx: -TAU/5,   ry: -0.4  },
-      
-      // Right side
-      { f: 'd', x:  350, y: 160, z:  75, s: 4.9, len: 120, rx: -TAU/4,   ry:  0.2,  c: '#fff0fb' },
-      { f: 'r', x:  410, y: 140, z: -70, s: 4.6, len: 125, rx: -TAU/3.8, ry:  0.15 },
-      { f: 's', x:  470, y: 155, z:  85, s: 4.7, len: 110, rx: -TAU/3.5, ry: -0.2  },
-      { f: 't', x:  540, y: 130, z:  30, s: 5.1, len: 100, rx: -TAU/4.5, ry:  0.4,  c: color.tulipOrange },
-      { f: 'l', x:  600, y: 145, z: 120, s: 5.0, len: 175, rx: -TAU/4.8, ry: -0.3  },
-      
-      // Far right edge
-      { f: 'd', x:  660, y: 150, z:  50, s: 4.8, len: 130, rx: -TAU/4,   ry:  0.25, c: '#FFE4F0' },
-      { f: 'r', x:  720, y: 140, z: -90, s: 4.9, len: 115, rx: -TAU/3.9, ry: -0.15 },
-      { f: 's', x:  780, y: 165, z:  95, s: 4.5, len: 105, rx: -TAU/3.6, ry:  0.1  },
-      { f: 't', x:  840, y: 135, z:  40, s: 5.3, len: 120, rx: -TAU/4.3, ry:  0.3,  c: color.tulipPink },
-      { f: 'd', x:  900, y: 155, z: 110, s: 4.7, len: 125, rx: -TAU/4.1, ry: -0.2,  c: '#fff0fb' },
-      { f: 'l', x:  950, y: 140, z:  60, s: 5.2, len: 170, rx: -TAU/5,   ry: -0.4  }
-    ];
-
-    flowers.forEach(d => {
-      if      (d.f === 'd') createDaisy(fgGroup,    d.x, d.y, d.z, d.s, d.len, d.rx, d.ry, d.c);
-      else if (d.f === 'r') createRose(fgGroup,     d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 'l') createLavender(fgGroup, d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 's') createSunflower(fgGroup,d.x, d.y, d.z, d.s, d.len, d.rx, d.ry);
-      else if (d.f === 't') createTulip(fgGroup,    d.x, d.y, d.z, d.s, d.len, d.rx, d.ry, d.c);
-    });
+    // background is rendered in BeeBackground.svelte
 
     // ─── Bee ───────────────────────────────────────────────────────────
+    const fgGroup = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 50, z: 120 } });
+
     let BEE_CONT  = new Zdog.Anchor({ addTo: fgGroup, translate: { x: 0, y: -100, z: 0 }, scale: 1.55 });
     let BEE_PIVOT = new Zdog.Anchor({ addTo: BEE_CONT, translate: { x: 0, y: 32, z: -35 }, rotate: { y: 0 } });
     let BEE       = new Zdog.Anchor({ addTo: BEE_PIVOT, translate: { x: 0, y: -32, z: 35 } });
@@ -746,10 +505,12 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       }
     }
     
-    canvasRef.addEventListener('click',       onCanvasClick);
-    canvasRef.addEventListener('pointerdown', onPointerDown);
-    canvasRef.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup',      onPointerUp);
+    if (!embedded) {
+      canvasRef.addEventListener('click',       onCanvasClick);
+      canvasRef.addEventListener('pointerdown', onPointerDown);
+      canvasRef.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup',      onPointerUp);
+    }
 
     // First thought after 3 s
     setTimeout(() => showThought("Buzz! 🌸 I'm thinking about effort and rest. What about you?"), 3000);
@@ -794,10 +555,13 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 {/if}
 
 <!-- ─── Canvas ─────────────────────────────────────────────────────── -->
+{#if !embedded}
+  <BeeBackground />
+{/if}
 <canvas bind:this={canvasRef} class="scene"></canvas>
 
 <!-- ─── Radial menu ────────────────────────────────────────────────── -->
-{#if radialMenuOpen}
+{#if !embedded && radialMenuOpen}
   <div class="radial-overlay">
     {#each interactionCards as card, i}
       {@const angle = (i / interactionCards.length) * 360 - 90}
@@ -835,32 +599,36 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       </div>
     </div>
   </div>
-{/if}
+  {/if}
 
-<!-- ─── Thought bubble ─────────────────────────────────────────────── -->
-<div class="thought-wrap" class:visible={thoughtBubbleVisible}>
+  <!-- ─── Thought bubble ─────────────────────────────────────────────── -->
+  {#if !embedded}
+    <div class="thought-wrap" class:visible={thoughtBubbleVisible}>
   <div class="thought-bubble">
     <div class="thought-dots">
       <span></span><span></span><span></span>
     </div>
     <p class="thought-text">{thoughtBubbleText}</p>
   </div>
-  <div class="thought-reply">
-    <textarea
-      bind:value={replyInputValue}
-      placeholder="Reply to Buzz…"
-      rows="1"
-      disabled={isApiLoading}
-      on:keydown={handleReplyKey}
-    ></textarea>
-    <button class="reply-send" on:click={sendReply} disabled={isApiLoading || !replyInputValue.trim()}>
-      {isApiLoading ? '…' : '➤'}
-    </button>
+    <div class="thought-reply">
+      <textarea
+        bind:value={replyInputValue}
+        placeholder="Reply to Buzz…"
+        rows="1"
+        disabled={isApiLoading}
+        on:keydown={handleReplyKey}
+      ></textarea>
+      <button class="reply-send" on:click={sendReply} disabled={isApiLoading || !replyInputValue.trim()}>
+        {isApiLoading ? '…' : '➤'}
+      </button>
+    </div>
   </div>
-</div>
+  {/if}
 
-<!-- ─── Hint ───────────────────────────────────────────────────────── -->
-<p class="hint">Tap the bee to open interactions ✿</p>
+  {#if !embedded}
+    <!-- ─── Hint ───────────────────────────────────────────────────────── -->
+    <p class="hint">Tap the bee to open interactions ✿</p>
+  {/if}
 
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
@@ -873,13 +641,30 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     font-family: 'Nunito', sans-serif;
   }
 
+  .scene-root {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
   canvas.scene {
     position: fixed; inset: 0;
     width: 100vw; height: 100vh;
-    display: block; z-index: 0;
+    display: block; z-index: 1;
     touch-action: none;
   }
 
+  .scene-root.embedded canvas.scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .scene-root.embedded .background-scene {
+    display: none;
+  }
   /* ── Top bar ─────────────────────────────────────────────────────── */
   .top-bar {
     position: fixed;

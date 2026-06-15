@@ -9,6 +9,8 @@
   let overlayCanvasRef; 
   let wrapperRef; 
   
+  export let embedded = false;
+  
   // --- Environment & State Management ---
   let isDeep = false;
   let isAnimating = false;
@@ -719,6 +721,7 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
   <canvas 
     bind:this={canvasRef} 
     class="zdog-canvas"
+    class:embedded
     on:pointerdown={onPointerDown}
     on:pointermove={onPointerMove}
     on:pointerup={onPointerUp}
@@ -727,11 +730,13 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
   
   <canvas bind:this={overlayCanvasRef} class="overlay-canvas"></canvas>
   
-  <button class="history-log-btn" on:click={toggleHistory} aria-label="Toggle Log History">
-    📜
-  </button>
+  {#if !embedded}
+    <button class="history-log-btn" on:click={toggleHistory} aria-label="Toggle Log History">
+      📜
+    </button>
+  {/if}
 
-  {#if radialMenuOpen}
+  {#if !embedded && radialMenuOpen}
     <div 
       class="radial-menu-context" 
       style="left: {clickCoords.x}px; top: {clickCoords.y}px;"
@@ -848,6 +853,11 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
     z-index: 1;
   }
   .zdog-canvas:active { cursor: grabbing; }
+
+  .zdog-canvas.embedded {
+    position: absolute;
+    inset: 0;
+  }
 
   .overlay-canvas {
     position: absolute;
