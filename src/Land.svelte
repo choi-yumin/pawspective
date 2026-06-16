@@ -23,7 +23,7 @@
   const BEE_SCALE = 1.1;
 
   // navigation callback — call from a parent: <Island onSelectDove={() => view = 'dove'} />
-  let { onSelectDove } = $props();
+  let { onSelectDove, onSelectBee } = $props();
 
   // reactive state (Svelte 5 runes)
   let canvas = $state(null);   // bound to the <canvas>
@@ -248,6 +248,18 @@
     };
   }
 
+  function beeScreenPos() {
+    // use the bee's live (hovering) position, not the static start point
+    const src = bee ? bee.cont.translate : BEE_POS;
+    const v = new Zdog.Vector(src);
+    v.rotate(illo.rotate);
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: rect.width  / 2 + illo.zoom * (v.x + illo.translate.x),
+      y: rect.height / 2 + illo.zoom * (v.y + illo.translate.y),
+    };
+  }
+
   function isOnDove(e) {
     if (!illo) return false;
     const rect = canvas.getBoundingClientRect();
@@ -255,6 +267,16 @@
     const dx = (e.clientX - rect.left) - p.x;
     const dy = (e.clientY - rect.top)  - p.y;
     const hitRadius = 80 * DOVE_SCALE * illo.zoom; // generous, scales with zoom
+    return Math.hypot(dx, dy) <= hitRadius;
+  }
+
+  function isOnBee(e) {
+    if (!illo || !bee) return false;
+    const rect = canvas.getBoundingClientRect();
+    const p = beeScreenPos();
+    const dx = (e.clientX - rect.left) - p.x;
+    const dy = (e.clientY - rect.top)  - p.y;
+    const hitRadius = 90 * BEE_SCALE * illo.zoom; // bee model is chunky → a bit bigger
     return Math.hypot(dx, dy) <= hitRadius;
   }
 
@@ -290,17 +312,17 @@
 
   function handlePointerUp(e) {
     if (canvas) canvas.style.cursor = 'grab';
-    // a "click" = pointer barely moved (a drag moves much further)
     const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-    if (moved < 6 && isOnDove(e)) {
-      onSelectDove?.();
+    if (moved < 6) {
+      if (isOnDove(e))      onSelectDove?.();
+      else if (isOnBee(e))  onSelectBee?.();
     }
   }
 
   // turn the cursor into a pointer when hovering the dove
   function handlePointerMove(e) {
     if (!canvas || canvas.style.cursor === 'grabbing') return;
-    canvas.style.cursor = isOnDove(e) ? 'pointer' : 'grab';
+    canvas.style.cursor = (isOnDove(e) || isOnBee(e)) ? 'pointer' : 'grab';
   }
 
   onMount(() => {
