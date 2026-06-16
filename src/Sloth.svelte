@@ -251,8 +251,9 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
       element: canvasRef,
       dragRotate: false,
       resize: 'window',
-      rotate: { x: -0.18, y: -0.1, z: 0 }
+      rotate: { x: -0.16, y: -0.18, z: 0 }   // off-axis so the form has a near and far side
     });
+
     // background is rendered in SlothBackground.svelte
 
     // ─── The Sloth ─────────────────────────────────────────────────────
@@ -269,36 +270,29 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
       rotate: { z: -0.04 }
     });
 
+    // ── Torso from overlapping spheres → real volume front-to-back ──
     new Zdog.Shape({ addTo: bodyAnchor, stroke: 138, color: color.fur });
-    new Zdog.Shape({ addTo: bodyAnchor, stroke: 108, color: color.furDark, translate: { y: 42, z: -18 } });
+    new Zdog.Shape({ addTo: bodyAnchor, stroke: 120, color: color.furDark, translate: { y: 20, z: -34 } }); // back bulge
+    new Zdog.Shape({ addTo: bodyAnchor, stroke: 108, color: color.furDark, translate: { y: 46, z: -20 } }); // rump
 
-    new Zdog.Ellipse({
-      addTo: bodyAnchor,
-      width: 82,
-      height: 142,
-      stroke: 14,
-      color: color.furLight,
-      fill: true,
-      translate: { y: 18, z: 58 },
-      rotate: { z: 0.05 }
-    });
-
-    // small irregular fur / algae patches
+    // Belly that actually bulges toward the viewer
     [
-      { x: -38, y: -34, z: 62, w: 24, h: 9, r: 0.5, c: color.moss },
-      { x:  30, y:  10, z: 64, w: 18, h: 8, r: -0.4, c: color.moss },
-      { x: -18, y:  52, z: 64, w: 26, h: 8, r: 0.2, c: color.furDark }
+      { y: -34, z: 46, s: 60 },
+      { y:   2, z: 54, s: 74 },
+      { y:  34, z: 50, s: 66 },
+      { y:  60, z: 38, s: 48 }
+    ].forEach(b => {
+      new Zdog.Shape({ addTo: bodyAnchor, stroke: b.s, color: color.furLight, translate: { y: b.y, z: b.z } });
+    });
+    new Zdog.Shape({ addTo: bodyAnchor, stroke: 50, color: color.faceCream, translate: { y: 10, z: 66 } });
+
+    // fur/algae tufts as little spheres on the belly surface (not flat patches)
+    [
+      { x: -30, y: -30, z: 72, s: 17, c: color.moss },
+      { x:  28, y:   6, z: 76, s: 14, c: color.moss },
+      { x: -16, y:  46, z: 66, s: 15, c: color.furDark }
     ].forEach(p => {
-      new Zdog.Ellipse({
-        addTo: bodyAnchor,
-        width: p.w,
-        height: p.h,
-        stroke: 4,
-        fill: true,
-        color: p.c,
-        translate: { x: p.x, y: p.y, z: p.z },
-        rotate: { z: p.r }
-      });
+      new Zdog.Shape({ addTo: bodyAnchor, stroke: p.s, color: p.c, translate: { x: p.x, y: p.y, z: p.z } });
     });
 
   // Natural curved limbs: arms longer, back legs slightly behind and lower
@@ -377,10 +371,13 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
   const lidR = new Zdog.Shape({ addTo: head, stroke: 16, color: color.faceCream, translate: { x:  24, y: -12, z: 67 } });
 
   // Cheeks + nose
-  new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x: -40, y: 14, z: 46 } });
-  new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x:  40, y: 14, z: 46 } });
-  new Zdog.Ellipse({ addTo: head, width: 16, height: 11, stroke: 6, color: color.nose, fill: true, translate: { y: 10, z: 60 } });
-
+  // Rounder cheeks + a muzzle that bulges forward, with a protruding nose
+  new Zdog.Shape({ addTo: head, stroke: 18, color: color.cheek, translate: { x: -40, y: 14, z: 44 } });
+  new Zdog.Shape({ addTo: head, stroke: 18, color: color.cheek, translate: { x:  40, y: 14, z: 44 } });
+  new Zdog.Shape({ addTo: head, stroke: 50, color: color.faceCream, translate: { x: 0, y: 13, z: 52 } }); // muzzle
+  new Zdog.Shape({ addTo: head, stroke: 16, color: color.nose,  translate: { x: 0, y: 8, z: 74 } });        // nose tip
+  new Zdog.Shape({ addTo: head, stroke: 6,  color: '#000',      translate: { x: -4, y: 9, z: 80 } });        // nostrils
+  new Zdog.Shape({ addTo: head, stroke: 6,  color: '#000',      translate: { x:  4, y: 9, z: 80 } });
   // Brows + mouth (mouth is a bezier we re-path for expressions)
   const leftBrow  = new Zdog.Shape({ addTo: head, path: [{ x: -36, y: -26 }, { x: -14, y: -30 }], stroke: 7, color: color.furDark, translate: { z: 58 }, rotate: { z: -0.1 } });
   const rightBrow = new Zdog.Shape({ addTo: head, path: [{ x:  14, y: -30 }, { x:  36, y: -26 }], stroke: 7, color: color.furDark, translate: { z: 58 }, rotate: { z:  0.1 } });
