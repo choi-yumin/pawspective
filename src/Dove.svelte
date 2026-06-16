@@ -218,8 +218,8 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
     const TAU = Zdog.TAU;
 
     const C = {
-      white:    '#F4F2EE',
-      mid:      '#E8E5DE',
+      white:    '#ffffff',
+      mid:      '#f2f2f2',
       shade:    '#DAD6CE',
       beak:     '#D89A6E',
       beakDk:   '#C07E50',
