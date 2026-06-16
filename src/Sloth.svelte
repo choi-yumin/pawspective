@@ -156,7 +156,7 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
       rotate: { x: -0.10, y: -0.08, z: -0.15 }
     });
 
-    const SLOTH_CONT = new Zdog.Anchor({ addTo: scene, translate: { x: -10, y: 10, z: -300 }, scale: 1 });
+    const SLOTH_CONT = new Zdog.Anchor({ addTo: scene, translate: { x: -30, y: 200, z: -500 }, scale: 1 });
     const PIVOT = new Zdog.Anchor({ addTo: SLOTH_CONT });
     const SLOTH = new Zdog.Anchor({ addTo: PIVOT });
 
@@ -220,12 +220,25 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
     new Zdog.Shape({ addTo: head, stroke: 46, color: color.faceCream, translate: { x: -30, y: 10, z: 14 } });
     new Zdog.Shape({ addTo: head, stroke: 16, color: color.nose,      translate: { x: -54, y:  8, z: 14 } });
 
-    new Zdog.Ellipse({ addTo: head, width: 24, height: 40, stroke: 6, color: color.mask, fill: true, translate: { x: -14, y: -2, z: 38 } });
-    new Zdog.Shape({ addTo: head, stroke: 15, color: color.eye, translate: { x: -16, y: -2, z: 42 } });
-    new Zdog.Shape({ addTo: head, stroke: 5,  color: '#FFFFFF', translate: { x: -19, y: -5, z: 47 } });
-    new Zdog.Shape({ addTo: head, stroke: 14, color: color.cheek, translate: { x: 2, y: 20, z: 36 } });
+  const eye = new Zdog.Ellipse({ 
+  addTo: head, width: 14, height: 14, 
+  fill: true, stroke: 1, color: color.eye, 
+  translate: { x: -16, y: -2, z: 42 } 
+  });
 
-    const lid = new Zdog.Shape({ addTo: head, stroke: 24, color: color.faceCream, translate: { x: -16, y: -12, z: 41 } });
+  const lid = new Zdog.Ellipse({ 
+    addTo: eye, width: 14.5, height: 14.5, 
+    fill: true, stroke: 1, color: color.mask, 
+    translate: { z: 2 }, // Pulled to the absolute front
+    quarters: 4 
+  });
+
+  const pupil = new Zdog.Ellipse({ 
+    addTo: eye, width: 4.5, height: 4.5,
+    fill: true, stroke: 1, color: '#FFFFFF', 
+    // Changed y to 2.5 to move it to the visual bottom half
+    translate: { x: -0.5, y: 0.5, z: 1 } 
+});
 
     const leftBrow  = new Zdog.Shape({ addTo: head, path: [{ x: -30, y: -18 }, { x: -6, y: -22 }], stroke: 6, color: color.furDark, translate: { z: 44 } });
     const rightBrow = new Zdog.Shape({ addTo: head, path: [{ x: 20, y: -16 }, { x: 36, y: -18 }],   stroke: 6, color: color.furDark, translate: { z: -30 } });
@@ -236,14 +249,31 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
     });
 
     // ─── Expression system ───
-    let lidBase = 0; // 0 = eyes closed perfectly covering the eye
+    let lidState = 4; // 4 = closed, 2 = half open
+
     function setExpression(name) {
-      let lidY = 0, brow = -0.1, my = 20, c0y = 23, c1y = 23;
-      if (name === 'sleepy')        { lidY = 0.5;   brow = -0.10; my = 20; c0y = 23; c1y = 23; } // Closed
-      else if (name === 'content')  { lidY = -11; brow = -0.05; my = 19; c0y = 24; c1y = 24; } // Open
-      else if (name === 'surprised'){ lidY = -15; brow = -0.22; my = 20; c0y = 27; c1y = 27; } // Wide
+      let brow = -0.1, my = 20, c0y = 23, c1y = 23;
       
-      lidBase = lidY;
+      if (name === 'sleepy')        { lidState = 4; brow = -0.10; my = 20; c0y = 23; c1y = 23; } 
+      else if (name === 'content')  { lidState = 2; brow = -0.05; my = 19; c0y = 24; c1y = 24; } 
+      else if (name === 'surprised'){ lidState = 0; brow = -0.22; my = 20; c0y = 27; c1y = 27; } 
+      
+      if (lidState === 4) {
+        lid.quarters = 4;
+        lid.rotate.z = 0;
+        lid.visible = true;
+        pupil.visible = false; // FORCE HIDING THE PUPIL
+      } else if (lidState === 2) {
+        lid.quarters = 2;
+        lid.rotate.z = -Zdog.TAU / 4; // PUTS THE LID ON THE TOP HALF
+        lid.visible = true;
+        pupil.visible = true;
+      } else {
+        lid.visible = false;
+        pupil.visible = true;
+      }
+      lid.updatePath();
+
       leftBrow.rotate.z  = brow;
       rightBrow.rotate.z = -brow;
       mouth.path = [
@@ -254,6 +284,7 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
     }
     setExpression('sleepy');
 
+    // ─── Animation Loop ───
     // ─── Animation Loop ───
     let frame = 0, isRunning = true, isBusy = false, blinkTimer = 0;
 
@@ -268,20 +299,38 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
         SLOTH_CONT.translate.y = 40 + Math.sin(frame / 100) * 0.5;
       }
 
+      // --- NEW STEP 3 GOES HERE ---
+     // If awake, add occasional blinks
       // If awake, add occasional blinks
-      if (lidBase < 0) {
+      if (lidState < 4) {
         blinkTimer++;
-        let blink = 0;
         if (blinkTimer > 240) {
           const t = blinkTimer - 240;
-          if (t < 16) blink = Math.sin((t / 16) * Math.PI) * 15;
-          else blinkTimer = 0;
+          if (t < 6) {
+            // Blink shut
+            if (lid.quarters !== 4) {
+               lid.quarters = 4;
+               lid.rotate.z = 0;
+               lid.visible = true;
+               pupil.visible = false; // HIDE PUPIL DURING BLINK
+               lid.updatePath();
+            }
+          } else {
+            // Snap back open
+            if (lid.quarters !== lidState) {
+               lid.quarters = lidState;
+               lid.rotate.z = lidState === 2 ? -Zdog.TAU / 4 : 0;
+               lid.visible = (lidState > 0);
+               pupil.visible = true; // SHOW PUPIL AFTER BLINK
+               lid.updatePath();
+            }
+            if (t >= 12) blinkTimer = 0;
+          }
         }
-        lid.translate.y = lidBase + blink;
       } else {
-        lid.translate.y = lidBase;
+         // Failsafe for when it's fully asleep
+         pupil.visible = false;
       }
-
       scene.updateRenderGraph();
       requestAnimationFrame(render);
     }
@@ -297,8 +346,11 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
         onComplete: () => {
           // Stay awake for a little while, then gently go back to sleep
           setTimeout(() => {
-            setExpression('sleepy');
             isBusy = false;
+            // Only fall asleep if the user isn't currently dragging it
+            if (!isDragging) {
+              setExpression('sleepy');
+            }
           }, 5000);
         }
       });
@@ -325,6 +377,9 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
       isDragging = true; wasDragging = false; dragDist = 0;
       lastX = e.clientX; lastY = e.clientY;
       try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
+      
+      // Open eyes upon touch
+      if (!isBusy) setExpression('content');
     }
     
     function onPointerMove(e) {
@@ -363,6 +418,12 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
     
     function onPointerUp() {
       isDragging = false;
+      
+      // Fall asleep when let go, unless a "wake cycle" (double click) is actively running
+      if (!isBusy) {
+        setExpression('sleepy');
+      }
+
       // Gentle settle back into natural resting position after dragging
       if (wasDragging) {
         gsap.to([leftArm.rotate, rightArm.rotate, leftLeg.rotate, rightLeg.rotate, PIVOT.rotate], { 

@@ -115,27 +115,6 @@
       translate: { z: 40 }
     });
 
-    [[-240, -250], [-40, -250], [140, -250], [320, -250]].forEach(([x, _]) => {
-      const baseY = getBranchY(x);
-      new Zdog.Shape({ addTo: slothTreeGroup, path: [{ x: x - 6, y: baseY - 4 }, { x: x + 8, y: baseY - 18 }], stroke: 6, color: color.branchDk });
-    });
-    
-    [{ x: -280, yOffset: 14 }, { x: -140, yOffset: 10 }, { x: 40, yOffset: 14 }, { x: 220, yOffset: 12 }, { x: 400, yOffset: 10 }].forEach((p, i) => {
-      new Zdog.Ellipse({ addTo: slothTreeGroup, width: 38, height: 20, stroke: 5, fill: true,
-        color: i % 2 ? color.leafGreen : color.leafDark, 
-        translate: { x: p.x, y: getBranchY(p.x) + 42 + p.yOffset, z: 10 }, 
-        rotate: { z: (i % 2 ? 0.5 : -0.4) } 
-      });
-    });
-
-    [{ x: -180, len: 120 }, { x: 360, len: 90 }].forEach(v => {
-      const startY = getBranchY(v.x) + 36;
-      new Zdog.Shape({ addTo: slothTreeGroup, path: [
-        { x: v.x, y: startY },
-        { bezier: [{ x: v.x + 16, y: startY + v.len * 0.4 }, { x: v.x - 16, y: startY + v.len * 0.7 }, { x: v.x + 6, y: startY + v.len }] }
-      ], stroke: 5, color: color.vine, closed: false });
-    });
-
     scene.updateRenderGraph();
   });
 </script>
