@@ -5,7 +5,7 @@ An interactive, responsive pseudo-3D web experience built with **Svelte** and un
 **Students:** Amanbay Makhabbat (ID: 20240935) and Yu Min Choi (ID: 20220899)
 **Department:** Industrial Design, KAIST  
 **Contact:** [mako1004@kaist.ac.kr](mailto:mako1004@kaist.ac.kr)  
-**Links:** [Website](https://pawspective-1.netlify.app/) [Git Repository](https://git.prototyping.id/20220899/pawspective.git) | [Video Demo](https://www.youtube.com/watch?v=Sbo288wAwSE)
+**Links:** [Website](https://pawspective-1.netlify.app/) | [Git Repository](https://git.prototyping.id/20220899/pawspective.git) | [Video Demo](https://www.youtube.com/watch?v=Sbo288wAwSE)
 
 ## Core Concept
 
