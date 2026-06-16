@@ -10,53 +10,85 @@
 
   export let embedded = false;
 
-  let radialMenuOpen = false;
-  let activeCard = null;
+  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-  const interactionCards = [
-    {
-      id: 'chat',
-      icon: '💬',
-      label: 'Chat',
-      title: 'Answer a thought',
-      description: 'The chicken puts on its glasses, fixes its gaze, and thoughtfully responds to you.',
-      hint: 'A brilliant mind at work.'
-    },
-    {
-      id: 'peck',
-      icon: '🌾',
-      label: 'Peck',
-      title: 'Peck the ground',
-      description: 'The chicken bobs down and pecks at the grass a few times, looking for seeds.',
-      hint: 'A quick little snack break.'
-    },
-    {
-      id: 'strut',
-      icon: '💃',
-      label: 'Strut',
-      title: 'Do a little strut',
-      description: 'The chicken struts side to side and kicks up its feet, showing off a bit.',
-      hint: 'Pure chicken swagger.'
-    }
+  let thoughtBubbleVisible = true;
+  let thoughtBubbleText = 'Bawk bawk… got a question for this thoughtful chicken?';
+  let replyInputValue = '';
+  let isApiLoading = false;
+
+  let chatHistory = [
+    { role: 'assistant', content: 'Bawk bawk… got a question for this thoughtful chicken?' }
   ];
+
+  const SYSTEM_TEXT = `You are Professor Cluck, a clever, warm, slightly silly chicken. You answer in short, helpful messages, usually 2-4 sentences max. You can use light chicken humor, but keep answers useful and clear.`;
 
   let chatFn, peckFn, strutFn;
 
   function goHome() { dispatch('back'); }
 
-  function openCard(id) {
-    activeCard = interactionCards.find(c => c.id === id);
-    radialMenuOpen = false;
+  function showThought(text) {
+    thoughtBubbleText = text;
+    thoughtBubbleVisible = true;
   }
 
-  function closeCard() { activeCard = null; }
+  async function sendReply() {
+    const msg = replyInputValue.trim();
+    if (!msg || isApiLoading) return;
+    replyInputValue = '';
+    await askChicken(msg);
+  }
 
-  function executeCard() {
-    if (!activeCard) return;
-    if (activeCard.id === 'chat')   chatFn?.();
-    if (activeCard.id === 'peck')   peckFn?.();
-    if (activeCard.id === 'strut')  strutFn?.();
-    activeCard = null;
+  function handleReplyKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendReply();
+    }
+  }
+
+  async function askChicken(userMessage) {
+    if (isApiLoading) return;
+    isApiLoading = true;
+    showThought('…');
+    chatFn?.();
+
+    chatHistory = [...chatHistory, { role: 'user', content: userMessage }];
+
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: SYSTEM_TEXT },
+            ...chatHistory
+          ],
+          max_tokens: 256,
+          temperature: 0.85
+        })
+      });
+
+      if (!res.ok) throw new Error(`API returned status ${res.status}`);
+
+      const data = await res.json();
+      const replyText = data?.choices?.[0]?.message?.content?.trim();
+
+      if (replyText) {
+        chatHistory = [...chatHistory, { role: 'assistant', content: replyText }];
+        showThought(replyText);
+      } else {
+        showThought('Bawk… my thought got scrambled. Try asking again?');
+      }
+    } catch (e) {
+      chatHistory = chatHistory.slice(0, -1);
+      showThought('Bawk… my thought got scrambled. Try asking again?');
+    } finally {
+      isApiLoading = false;
+    }
   }
 
   onMount(() => {
@@ -345,6 +377,7 @@
 
     // ─── Pointer interactions ─────────────────────────────────────
     let isDragging = false, lastX = 0, lastY = 0, wasDragging = false;
+    let clickTimeout = null;
     const sensitivity = 0.005;
 
     function onPointerDown(e) {
@@ -365,17 +398,18 @@
       try { canvasRef.releasePointerCapture(e.pointerId); } catch (_) {}
     }
 
-    function handleClick(e) {
+    function handleClick() {
       if (wasDragging) return;
-      const rect = canvasRef.getBoundingClientRect();
-      const x = e.clientX - rect.left - rect.width / 2;
-      const y = e.clientY - rect.top - rect.height / 2;
-      const dist = Math.hypot(x - chicken.translate.x, y - chicken.translate.y);
-      if (dist < 450) {
-        radialMenuOpen = !radialMenuOpen;
-        activeCard = null;
+
+      if (clickTimeout !== null) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+        strutFn?.();
       } else {
-        radialMenuOpen = false;
+        clickTimeout = setTimeout(() => {
+          clickTimeout = null;
+          peckFn?.();
+        }, 250);
       }
     }
 
@@ -388,6 +422,7 @@
 
     return () => {
       isRunning = false;
+      if (clickTimeout) clearTimeout(clickTimeout);
       if (!embedded) {
         canvasRef?.removeEventListener('pointerdown', onPointerDown);
         canvasRef?.removeEventListener('pointermove', onPointerMove);
@@ -409,45 +444,28 @@
 {/if}
 <canvas bind:this={canvasRef} class="scene" class:embedded></canvas>
 
-{#if !embedded && radialMenuOpen}
-  <div class="radial-overlay">
-    {#each interactionCards as card, i}
-      {@const angle = (i / interactionCards.length) * 360 - 90}
-      {@const rad   = angle * (Math.PI / 180)}
-      {@const r     = 120}
-      <button
-        class="radial-btn"
-        style="
-          left: calc(50% + {Math.cos(rad) * r}px - 38px);
-          top:  calc(58% + {Math.sin(rad) * r}px - 38px);
-          animation-delay: {i * 55}ms;
-        "
-        on:click={() => openCard(card.id)}
-      >
-        <span class="radial-icon">{card.icon}</span>
-        <span class="radial-label">{card.label}</span>
-      </button>
-    {/each}
-    <button class="radial-center" on:click={() => { radialMenuOpen = false; }}>✕</button>
-  </div>
-{/if}
-
-{#if activeCard}
-  <div class="card-overlay" on:click|self={() => activeCard = null}>
-    <div class="card">
-      <div class="card-icon">{activeCard.icon}</div>
-      <h2>{activeCard.title}</h2>
-      <p class="card-desc">{activeCard.description}</p>
-      <p class="card-hint">✦ {activeCard.hint}</p>
-      <div class="card-actions">
-        <button class="card-btn primary" on:click={executeCard}>Activate</button>
-        <button class="card-btn ghost"   on:click={closeCard}>Cancel</button>
-      </div>
+<div class="thought-wrap" class:visible={thoughtBubbleVisible}>
+  <div class="thought-bubble">
+    <div class="thought-dots">
+      <span></span><span></span><span></span>
     </div>
+    <p class="thought-text">{thoughtBubbleText}</p>
   </div>
-{/if}
+  <div class="thought-reply">
+    <textarea
+      bind:value={replyInputValue}
+      placeholder="Ask Professor Cluck…"
+      rows="1"
+      disabled={isApiLoading}
+      on:keydown={handleReplyKey}
+    ></textarea>
+    <button class="reply-send" on:click={sendReply} disabled={isApiLoading || !replyInputValue.trim()}>
+      {isApiLoading ? '…' : '➤'}
+    </button>
+  </div>
+</div>
 
-<p class="hint">Tap the chicken to open interactions ✿</p>
+<p class="hint">Drag to rotate. Click to peck. Double-click to strut.</p>
 
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
@@ -495,90 +513,75 @@
   .bar-btn:hover { background: #fff; transform: translateY(-1px); }
   .bar-btn:active { transform: scale(.96); }
 
-  /* ── Radial menu ─────────────────────────────────────────────────── */
-  .radial-overlay {
-    position: fixed; inset: 0;
-    z-index: 20;
+  /* ── Chatbot ─────────────────────────────────────────────────── */
+  .thought-wrap {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    max-width: min(360px, 90vw);
+    display: flex; flex-direction: column; gap: 10px;
+    z-index: 15;
     pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px) scale(.96);
+    transition: opacity .35s ease, transform .35s ease;
+    align-items: flex-end;
   }
-  .radial-btn {
-    position: fixed;
-    width: 76px; height: 76px;
-    border: none; border-radius: 50%;
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 6px 28px rgba(90,26,48,.16);
-    cursor: pointer;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 2px;
+  .thought-wrap.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
     pointer-events: all;
-    animation: radialPop .25s cubic-bezier(.34,1.56,.64,1) both;
-    transition: transform .12s, background .12s;
   }
-  .radial-btn:hover { background: #FF8FAE; transform: scale(1.12); }
-  .radial-btn:hover .radial-label { color: #fff; }
-  @keyframes radialPop {
-    from { transform: scale(0); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
+  .thought-bubble {
+    background: #fff;
+    border: 2px solid rgba(255,143,174,.32);
+    border-radius: 22px 22px 6px 22px;
+    padding: 14px 18px;
+    box-shadow: 0 8px 36px rgba(90,26,48,.14);
+    position: relative;
+    max-width: 100%;
   }
-  .radial-icon  { font-size: 1.6rem; line-height: 1; }
-  .radial-label { font-size: 0.66rem; font-weight: 800; color: #7A2D44; letter-spacing: .02em; }
-
-  .radial-center {
-    position: fixed;
-    left: calc(50% - 24px);
-    top:  calc(58% - 24px);
-    width: 48px; height: 48px;
-    border: none; border-radius: 50%;
-    background: rgba(255, 143, 174, 0.902);
-    color: #fff;
-    font-size: 1rem; font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(90,26,48,.18);
-    pointer-events: all;
-    animation: radialPop .2s cubic-bezier(.34,1.56,.64,1) both;
+  .thought-dots { display: flex; gap: 4px; margin-bottom: 6px; }
+  .thought-dots span { width: 5px; height: 5px; background: #FF8FAE; border-radius: 50%; }
+  .thought-text {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #5A1A30;
+    line-height: 1.6;
+    font-weight: 600;
+  }
+  .thought-reply { display: flex; gap: 8px; align-items: flex-end; width: 100%; }
+  .thought-reply textarea {
+    flex: 1;
+    background: rgba(255,255,255,0.96);
+    border: 1.5px solid rgba(255,143,174,.42);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    color: #5A1A30;
+    outline: none; resize: none;
+    height: 44px; min-height: 44px; max-height: 88px;
+    line-height: 1.5; box-sizing: border-box;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .thought-reply textarea::placeholder { color: rgba(90,26,48,.42); }
+  .thought-reply textarea:focus {
+    border-color: #F04A6F;
+    box-shadow: 0 0 0 3px rgba(240,74,111,.16);
+  }
+  .reply-send {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: none;
+    background: #FF8FAE; color: #fff;
+    font-size: 1rem; cursor: pointer;
+    flex-shrink: 0;
     transition: background .12s, transform .1s;
-    z-index: 21;
-  }
-  .radial-center:hover { background: #F04A6F; transform: scale(1.08); }
-
-  /* ── Interaction card ────────────────────────────────────────────── */
-  .card-overlay {
-    position: fixed; inset: 0;
-    background: rgba(90, 26, 48, 0.28);
-    backdrop-filter: blur(4px);
-    z-index: 30;
     display: flex; align-items: center; justify-content: center;
   }
-  .card {
-    background: #fff;
-    border-radius: 28px;
-    padding: 32px 28px;
-    max-width: 340px; width: calc(100vw - 48px);
-    box-shadow: 0 28px 80px rgba(90,26,48,.22);
-    text-align: center;
-    animation: cardIn .22s cubic-bezier(.34,1.56,.64,1) both;
-  }
-  @keyframes cardIn {
-    from { transform: scale(.88); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-  }
-  .card-icon { font-size: 2.8rem; margin-bottom: 8px; }
-  .card h2   { margin: 0 0 10px; font-size: 1.1rem; color: #5A1A30; }
-  .card-desc { margin: 0 0 8px; color: #7a3050; line-height: 1.6; font-size: 0.95rem; }
-  .card-hint { margin: 0 0 24px; color: #b07090; font-size: 0.85rem; font-style: italic; }
-  .card-actions { display: flex; gap: 10px; }
-  .card-btn {
-    flex: 1; border: none; border-radius: 16px;
-    padding: 13px 0; font-family: 'Nunito', sans-serif;
-    font-weight: 800; font-size: 0.9rem; cursor: pointer;
-    transition: background .12s, transform .1s;
-  }
-  .card-btn:active { transform: scale(.96); }
-  .card-btn.primary { background: #FF8FAE; color: #fff; }
-  .card-btn.primary:hover { background: #F04A6F; }
-  .card-btn.ghost   { background: #fde6ef; color: #B73058; }
-  .card-btn.ghost:hover { background: #f9cad8; }
+  .reply-send:hover:not(:disabled) { background: #F04A6F; }
+  .reply-send:active:not(:disabled) { transform: scale(.94); }
+  .reply-send:disabled { opacity: .5; cursor: default; }
 
   /* ── Hint ────────────────────────────────────────────────────────── */
   .hint {
