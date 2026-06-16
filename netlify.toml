@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# If you need to set environment variables for your build, uncomment and set here
+#[build.environment]
+#  NODE_ENV = "production"
