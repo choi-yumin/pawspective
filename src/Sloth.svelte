@@ -564,7 +564,7 @@ You give calm, insightful, slightly dreamy advice. You never rush and you never 
 
 {#if !embedded}
   <div class="top-bar">
-    <button class="bar-btn" on:click={goHome}>← Home</button>
+    <button class="bar-btn" on:click={goHome}>←</button>
     <button class="bar-btn" on:click={toggleHistory}>
       {historyOpen ? 'Close history' : '💬 History'}
     </button>
