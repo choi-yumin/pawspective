@@ -13,8 +13,6 @@
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-  let radialMenuOpen = false;
-  let activeCard = null;
   let historyOpen = false;
   let thoughtBubbleVisible = false;
   let thoughtBubbleText = '';
@@ -23,36 +21,6 @@
   let bubbleAutoHideTimer = null;
   let isApiLoading = false;
   let conversationActive = false;
-
-  const interactionCards = [
-    {
-      id: 'annoy',
-      icon: '😤',
-      label: 'Annoy',
-      title: 'Pull the bee\'s tail',
-      description: 'Grab and drag the bee hard to make it flash red with anger.',
-      hint: 'Drag the bee quickly to trigger annoyance.',
-      angle: -90
-    },
-    {
-      id: 'pollen',
-      icon: '🌸',
-      label: 'Pollen',
-      title: 'Gather pollen',
-      description: 'Click any of the flowers scattered around the garden to send the bee collecting.',
-      hint: 'Tap the flowers in the foreground.',
-      angle: 0
-    },
-    {
-      id: 'chat',
-      icon: '💬',
-      label: 'Chat',
-      title: 'Speak to the bee',
-      description: 'The bee has thoughts and wisdom about effort, rest, and how others see you.',
-      hint: 'Reply to the bee\'s thought bubbles below.',
-      angle: 90
-    }
-  ];
 
   let chatHistory = [
     { role: 'assistant', content: "Buzz! 🌸 Ask me about effort, rest, or what others think of you!" }
@@ -80,36 +48,8 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 
   function goHome() { dispatch('back'); }
 
-  function toggleRadialMenu() {
-    radialMenuOpen = !radialMenuOpen;
-    if (radialMenuOpen) { activeCard = null; historyOpen = false; }
-  }
-
-  function openCard(id) {
-    activeCard = interactionCards.find(c => c.id === id);
-    radialMenuOpen = false;
-  }
-
-  function closeCard() { activeCard = null; }
-
-  function executeCard() {
-    if (!activeCard) return;
-    if (activeCard.id === 'annoy') triggerAnnoyanceFn?.();
-    if (activeCard.id === 'pollen') {
-      // Pick a random flower zone when executed from the generic overlay action menu
-      const randomFlower = flowerZones[Math.floor(Math.random() * flowerZones.length)];
-      gatherPollenFn?.(randomFlower);
-    }
-    if (activeCard.id === 'chat') {
-      activeCard = null;
-      return;
-    }
-    activeCard = null;
-  }
-
   function toggleHistory() {
     historyOpen = !historyOpen;
-    if (historyOpen) { radialMenuOpen = false; activeCard = null; }
   }
 
   function showThought(text, keepAlive = false) {
@@ -444,10 +384,9 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
         }
       }
 
-      // Bee body click → radial menu
+      // Bee body click → invite chat instead of opening an interaction toolkit
       if (Math.hypot(cx, cy + 100) < 130) {
-        radialMenuOpen = !radialMenuOpen;
-        activeCard = null;
+        showThought('Buzz! 🌸 What is on your mind?', true);
       }
     }
     
@@ -458,13 +397,16 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       window.addEventListener('pointerup',      onPointerUp);
     }
 
-    setTimeout(() => showThought("Buzz! 🌸 I'm thinking about effort and rest. What about you?"), 3000);
-    scheduleThought();
+    if (!embedded) {
+      setTimeout(() => showThought("Buzz! 🌸 I'm thinking about effort and rest. What about you?"), 3000);
+      scheduleThought();
+    }
 
     return () => {
       isRunning = false;
       if (thoughtTimer) clearTimeout(thoughtTimer);
       if (bubbleAutoHideTimer) clearTimeout(bubbleAutoHideTimer);
+      if (!embedded) document.body.classList.remove(pageBodyClass);
       canvasRef?.removeEventListener('click',       onCanvasClick);
       canvasRef?.removeEventListener('pointerdown', onPointerDown);
       canvasRef?.removeEventListener('pointermove', onPointerMove);
@@ -473,14 +415,16 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   });
 </script>
 
-<div class="top-bar">
-  <button class="bar-btn" on:click={goHome}>←</button>
-  <button class="bar-btn" on:click={toggleHistory}>
-    {historyOpen ? 'Close history' : '💬 History'}
-  </button>
-</div>
+{#if !embedded}
+  <div class="top-bar">
+    <button class="bar-btn" on:click={goHome}>←</button>
+    <button class="bar-btn" on:click={toggleHistory}>
+      {historyOpen ? 'Close history' : '💬 History'}
+    </button>
+  </div>
+{/if}
 
-{#if historyOpen}
+{#if !embedded && historyOpen}
   <div class="history-panel">
     <div class="history-header">
       <h2>Session chat</h2>
@@ -500,45 +444,8 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 {#if !embedded}
   <BeeBackground />
 {/if}
-<canvas bind:this={canvasRef} class="scene"></canvas>
+<canvas bind:this={canvasRef} class="scene" class:embedded></canvas>
 
-{#if !embedded && radialMenuOpen}
-  <div class="radial-overlay">
-    {#each interactionCards as card, i}
-      {@const angle = (i / interactionCards.length) * 360 - 90}
-      {@const rad   = angle * (Math.PI / 180)}
-      {@const r     = 110}
-      <button
-        class="radial-btn"
-        style="
-          left:  calc(50% + {Math.cos(rad) * r}px - 36px);
-          top:   calc(50% + {Math.sin(rad) * r}px - 36px);
-          animation-delay: {i * 55}ms;
-        "
-        on:click={() => openCard(card.id)}
-      >
-        <span class="radial-icon">{card.icon}</span>
-        <span class="radial-label">{card.label}</span>
-      </button>
-    {/each}
-    <button class="radial-center" on:click={() => { radialMenuOpen = false; }}>✕</button>
-  </div>
-{/if}
-
-{#if activeCard}
-  <div class="card-overlay" on:click|self={() => activeCard = null}>
-    <div class="card">
-      <div class="card-icon">{activeCard.icon}</div>
-      <h2>{activeCard.title}</h2>
-      <p class="card-desc">{activeCard.description}</p>
-      <p class="card-hint">✦ {activeCard.hint}</p>
-      <div class="card-actions">
-        <button class="card-btn primary" on:click={executeCard}>Activate</button>
-        <button class="card-btn ghost"   on:click={closeCard}>Cancel</button>
-      </div>
-    </div>
-  </div>
-{/if}
 
 {#if !embedded}
   <div class="thought-wrap" class:visible={thoughtBubbleVisible}>
@@ -564,7 +471,7 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 {/if}
 
 {#if !embedded}
-  <p class="hint">Tap the bee to open interactions ✿</p>
+  <p class="hint">Click flowers to gather pollen. Drag quickly to annoy.</p>
 {/if}
 
 <style>
@@ -583,6 +490,13 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     width: 100vw; height: 100vh;
     display: block; z-index: 1;
     touch-action: none;
+  }
+
+  canvas.scene.embedded {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    inset: 0;
   }
 
   /* ── Top bar ─────────────────────────────────────────────────────── */
@@ -647,109 +561,19 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   .history-msg.user { background: #fffcf3; }
   .history-label { font-weight: 800; font-size: 0.78rem; color: #B73058; }
 
-  /* ── Radial menu ─────────────────────────────────────────────────── */
-  .radial-overlay {
-    position: fixed; inset: 0;
-    z-index: 20;
-    pointer-events: none;
-  }
-
-  .radial-btn {
-    position: fixed;
-    width: 72px; height: 72px;
-    border: none; border-radius: 50%;
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 6px 28px rgba(90,26,48,.16);
-    cursor: pointer;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 2px;
-    pointer-events: all;
-    animation: radialPop .25s cubic-bezier(.34,1.56,.64,1) both;
-    transition: transform .12s, background .12s;
-  }
-  .radial-btn:hover {
-    background: #FF8FAE;
-    transform: scale(1.12);
-  }
-  .radial-btn:hover .radial-label { color: #fff; }
-
-  @keyframes radialPop {
-    from { transform: scale(0); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
-  }
-
-  .radial-icon  { font-size: 1.5rem; line-height: 1; }
-  .radial-label { font-size: 0.65rem; font-weight: 800; color: #7A2D44; letter-spacing: .02em; }
-
-  .radial-center {
-    position: fixed;
-    left:  calc(50% - 24px);
-    top:   calc(50% - 24px);
-    width: 48px; height: 48px;
-    border: none; border-radius: 50%;
-    background: rgba(255,143,174,.9);
-    color: #fff;
-    font-size: 1rem; font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(90,26,48,.18);
-    pointer-events: all;
-    animation: radialPop .2s cubic-bezier(.34,1.56,.64,1) both;
-    transition: background .12s, transform .1s;
-    z-index: 21;
-  }
-  .radial-center:hover { background: #F04A6F; transform: scale(1.08); }
-
-  /* ── Interaction card ────────────────────────────────────────────── */
-  .card-overlay {
-    position: fixed; inset: 0;
-    background: rgba(90, 26, 48, 0.28);
-    backdrop-filter: blur(4px);
-    z-index: 30;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .card {
-    background: #fff;
-    border-radius: 28px;
-    padding: 32px 28px;
-    max-width: 340px; width: calc(100vw - 48px);
-    box-shadow: 0 28px 80px rgba(90,26,48,.22);
-    text-align: center;
-    animation: cardIn .22s cubic-bezier(.34,1.56,.64,1) both;
-  }
-  @keyframes cardIn {
-    from { transform: scale(.88); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-  }
-  .card-icon { font-size: 2.8rem; margin-bottom: 8px; }
-  .card h2   { margin: 0 0 10px; font-size: 1.1rem; color: #5A1A30; }
-  .card-desc { margin: 0 0 8px; color: #7a3050; line-height: 1.6; font-size: 0.95rem; }
-  .card-hint { margin: 0 0 24px; color: #b07090; font-size: 0.85rem; font-style: italic; }
-  .card-actions { display: flex; gap: 10px; }
-  .card-btn {
-    flex: 1; border: none; border-radius: 16px;
-    padding: 13px 0; font-family: 'Nunito', sans-serif;
-    font-weight: 800; font-size: 0.9rem; cursor: pointer;
-    transition: background .12s, transform .1s;
-  }
-  .card-btn:active { transform: scale(.96); }
-  .card-btn.primary { background: #FF8FAE; color: #fff; }
-  .card-btn.primary:hover { background: #F04A6F; }
-  .card-btn.ghost   { background: #fde6ef; color: #B73058; }
-  .card-btn.ghost:hover { background: #f9cad8; }
-
   /* ── Thought bubble ──────────────────────────────────────────────── */
   .thought-wrap {
     position: fixed;
-    top: 48%;
-    left: 56%;
-    max-width: min(310px, 40vw);
+    bottom: 32px;
+    right: 32px;
+    max-width: min(360px, 90vw);
     display: flex; flex-direction: column; gap: 10px;
     z-index: 15;
     pointer-events: none;
     opacity: 0;
     transform: translateY(8px) scale(.96);
     transition: opacity .35s ease, transform .35s ease;
+    align-items: flex-end;
   }
   .thought-wrap.visible {
     opacity: 1;
@@ -760,7 +584,7 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   .thought-bubble {
     background: #fff;
     border: 2px solid rgba(240,74,111,.25);
-    border-radius: 22px 22px 22px 6px;
+    border-radius: 22px 22px 6px 22px;
     padding: 14px 18px;
     box-shadow: 0 8px 36px rgba(90,26,48,.12);
     position: relative;
@@ -780,21 +604,32 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   }
 
   .thought-reply {
-    display: flex; gap: 6px;
-    background: #fff; padding: 6px;
-    border-radius: 20px;
-    border: 1.5px solid rgba(240,74,111,.15);
-    box-shadow: 0 6px 20px rgba(90,26,48,.06);
+    display: flex; gap: 8px;
+    align-items: flex-end;
+    width: 100%;
   }
   .thought-reply textarea {
-    flex: 1; border: none; resize: none;
-    font-family: 'Nunito', sans-serif; font-size: 0.88rem;
-    padding: 6px 10px; color: #3D1020; outline: none;
-    background: transparent;
+    flex: 1;
+    background: rgba(255,255,255,0.96);
+    border: 1.5px solid rgba(240,74,111,.25);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    color: #3D1020;
+    outline: none; resize: none;
+    height: 44px; min-height: 44px; max-height: 88px;
+    line-height: 1.5; box-sizing: border-box;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .thought-reply textarea::placeholder { color: #C08AA0; }
+  .thought-reply textarea:focus {
+    border-color: #FF8FAE;
+    box-shadow: 0 0 0 3px rgba(255,143,174,.18);
   }
   .reply-send {
     border: none; background: #FF8FAE; color: #fff;
-    border-radius: 50%; width: 32px; height: 32px;
+    border-radius: 50%; width: 44px; height: 44px;
     cursor: pointer; font-size: 0.85rem;
     display: flex; align-items: center; justify-content: center;
     transition: background .12s;
@@ -803,11 +638,15 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   .reply-send:disabled { background: #f0c3d0; cursor: not-allowed; }
 
   .hint {
-    position: fixed; bottom: 20px; left: 24px;
-    margin: 0; font-size: 0.85rem; font-weight: 700;
-    color: #A05070; z-index: 10;
+    position: fixed;
+    bottom: 22px; left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 0.8rem; font-weight: 600;
+    color: rgba(90, 26, 48, 0.58);
     pointer-events: none;
-    background: rgba(255,255,255,0.4);
-    padding: 4px 12px; border-radius: 12px;
+    letter-spacing: .04em;
+    z-index: 10;
+    text-align: center;
   }
 </style>
