@@ -75,12 +75,12 @@
     // ── Pond: flush with the grass surface (sits IN the land, not floating) ──
     // Bank rim slightly raised, water slightly recessed -> reads as a basin.
     new Zdog.Ellipse({
-      addTo: land, diameter: 800, stroke: 24, color: POND_EDGE,
-      rotate: { x: TAU / 4 }, translate: { y: SURFACE_Y - 4, z: ISLAND_Z },
+      addTo: land, diameter: 600, stroke: 24, color: POND_EDGE,
+      rotate: { x: TAU / 4 }, translate: { x: 100, y: SURFACE_Y - 4, z: ISLAND_Z },
     });
     new Zdog.Ellipse({
-      addTo: land, diameter: 760, stroke: 0, fill: true, color: POND,
-      rotate: { x: TAU / 4 }, translate: { y: SURFACE_Y - 2, z: ISLAND_Z },
+      addTo: land, diameter: 576, stroke: 0, fill: true, color: POND,
+      rotate: { x: TAU / 4 }, translate: { x: 100, y: SURFACE_Y - 2, z: ISLAND_Z },
     });
 
     // ── Trees, planted on the grass surface (y = SURFACE_Y) ──
@@ -109,10 +109,9 @@
       new Zdog.Shape({ addTo: c, stroke: 58,  color: CLOUD_WHITE, translate: { x: 100, y: 12 } });
     }
 
-    createCloud(r, -680, -360, -920, 1.25);
-    createCloud(r, -180, -380, -960, 1.15);
-    createCloud(r,  320, -360, -980, 1.10);
-    createCloud(r,  700, -300, -1040, 0.95);
+    createCloud(r, -680, -360, -500, 1.25);
+    createCloud(r, -180, -450, -960, 1.15);
+    createCloud(r,  320, -360, -600, 1.10);
   }
 
   // Offset of the cursor from the canvas centre, in CSS px.
