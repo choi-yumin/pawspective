@@ -400,7 +400,7 @@
 
 {#if !embedded}
   <div class="top-bar">
-    <button class="bar-btn" on:click={goHome}>← Home</button>
+    <button class="bar-btn" on:click={goHome}>←</button>
   </div>
 {/if}
 

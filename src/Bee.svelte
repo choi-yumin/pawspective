@@ -474,7 +474,7 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
 </script>
 
 <div class="top-bar">
-  <button class="bar-btn" on:click={goHome}>← Home</button>
+  <button class="bar-btn" on:click={goHome}>←</button>
   <button class="bar-btn" on:click={toggleHistory}>
     {historyOpen ? 'Close history' : '💬 History'}
   </button>

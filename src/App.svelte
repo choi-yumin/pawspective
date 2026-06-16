@@ -31,7 +31,9 @@
     on:back={() => openPage('menu')}
     onSelectBee={() => openPage('bee')}
     onSelectDove={() => openPage('dove')}
-    onSelectChicken={() => openPage('chicken')}  onSelectFish={() => openPage('blobfish')}     />
+    onSelectChicken={() => openPage('chicken')}
+    onSelectFish={() => openPage('blobfish')}
+    onSelectSloth={() => openPage('sloth')}     />
   {:else if page === 'bee'}
     <Bee on:back={() => openPage('menu')} />
   {:else if page === 'chicken'}
