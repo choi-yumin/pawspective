@@ -14,6 +14,17 @@
   const SPIN_SPEED = 0.003;
   const LAND_SCALE = 0.82;  // overall size of the island (lower = smaller)
 
+  // dove placement (shared by the model and the click hit-test)
+  const DOVE_POS   = { x: 220, y: -280, z: -360 };
+  const DOVE_SCALE = 1.35;
+
+  // bee placement (high in open sky so it never sorts behind the grass disk)
+  const BEE_POS   = { x: -200, y: -380, z: -140 };
+  const BEE_SCALE = 1.1;
+
+  // navigation callback — call from a parent: <Island onSelectDove={() => view = 'dove'} />
+  let { onSelectDove } = $props();
+
   // reactive state (Svelte 5 runes)
   let canvas = $state(null);   // bound to the <canvas>
 
@@ -25,7 +36,11 @@
   let anchorX = 0;
   let anchorY = 0;
   let dove;                  // { dove, frontWing, backWing } handle
-  let wingBeat = 0;          // drives the flap
+  let bee;                   // { cont, leftWing, rightWing, antler } handle
+  let wingBeat = 0;          // drives the dove flap
+  let beeFrame = 0;          // drives the bee buzzing animation
+  let downX = 0;             // pointer-down position (to tell click vs drag)
+  let downY = 0;
 
   const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -117,8 +132,6 @@
 
     // ── Dove (shapes only; wings returned so tick() can flap them) ──
     // Added to r so it rotates with the scene like the clouds.
-    // The counter-tilt on x presents it more head-on against the
-    // island's steep top-down camera (see note below the file).
     function createDove(parent, x, y, z, scale = 1) {
       const C = {
         white:  '#ffffff',
@@ -130,11 +143,7 @@
         eye:    '#1A1410',
       };
 
-      const d = new Zdog.Anchor({
-        addTo: parent,
-        translate: { x, y, z },
-        scale,
-      });
+      const d = new Zdog.Anchor({ addTo: parent, translate: { x, y, z }, scale });
 
       // body & neck
       new Zdog.Shape({ addTo: d, path: [{ x: -10, y: 15 }, { x: 25, y: 10 }], stroke: 52, color: C.white });
@@ -174,8 +183,79 @@
       return { dove: d, frontWing, backWing };
     }
 
-    // gliding in the sky; scaled up to read against the big island
-    dove = createDove(r, -250, -320, -500, 1.35);
+    dove = createDove(r, DOVE_POS.x, DOVE_POS.y, DOVE_POS.z, DOVE_SCALE);
+
+    // ── Bee (shapes only; wings + antennae returned so tick() can animate) ──
+    // Added to r so it buzzes in the sky and rotates with the scene.
+    function createBee(parent, x, y, z, scale = 1) {
+      const B = { yellow: '#FCD116', black: '#3D2620', white: '#FFFDF0', cheek: '#F26B50' };
+
+      const cont = new Zdog.Anchor({ addTo: parent, translate: { x, y, z }, scale });
+      const b    = new Zdog.Anchor({ addTo: cont });
+
+      // head + face
+      const head = new Zdog.Shape({ addTo: b, stroke: 130, color: B.yellow });
+      new Zdog.Shape({ addTo: head, stroke: 10, color: B.black, translate: { x: -22, y: 4, z: 36 } });
+      new Zdog.Shape({ addTo: head, stroke: 10, color: B.black, translate: { x:  14, y: 4, z: 40 } });
+      new Zdog.Shape({ addTo: head, stroke: 3.5, color: B.black, closed: false,
+        path: [{ x: -4, y: 10, z: 42 }, { bezier: [{ x: -2, y: 13, z: 42 }, { x: 2, y: 13, z: 42 }, { x: 4, y: 10, z: 42 }] }] });
+      new Zdog.Shape({ addTo: head, path: [{ x: -34, y: -14, z: 44 }, { x: -10, y: -22, z: 44 }], stroke: 8, color: B.black, translate: { x: -18, y: -8, z: 20 }, rotate: { z: -0.18 } });
+      new Zdog.Shape({ addTo: head, path: [{ x: 10, y: -22, z: 44 }, { x: 34, y: -14, z: 44 }], stroke: 8, color: B.black, translate: { x: 18, y: -8, z: 20 }, rotate: { z: 0.18 } });
+      new Zdog.Shape({ addTo: head, stroke: 14, color: B.cheek, translate: { x: -32, y: 14, z: 24 } });
+      new Zdog.Shape({ addTo: head, stroke: 14, color: B.cheek, translate: { x:  24, y: 14, z: 30 } });
+
+      // antennae (bob in tick)
+      const antler = new Zdog.Anchor({ addTo: head, translate: { y: -44, z: 10 } });
+      new Zdog.Shape({ addTo: antler, path: [{ y: 0, x: -10 }, { y: -22, x: -24, z: 8 }],  stroke: 4.5, color: B.black });
+      new Zdog.Shape({ addTo: antler, path: [{ y: 0, x:  10 }, { y: -22, x:  -4, z: 12 }], stroke: 4.5, color: B.black });
+
+      // arms
+      const leftArm  = new Zdog.Anchor({ addTo: b, translate: { x: -18, y: 45, z: 32 } });
+      const rightArm = new Zdog.Anchor({ addTo: b, translate: { x:  18, y: 45, z: 32 } });
+      new Zdog.Shape({ addTo: leftArm,  path: [{ y: 0 }, { y: 22 }], stroke: 7, color: B.black });
+      new Zdog.Shape({ addTo: rightArm, path: [{ y: 0 }, { y: 22 }], stroke: 7, color: B.black });
+
+      // striped body
+      const body = new Zdog.Anchor({ addTo: b, translate: { y: 32, z: -35 } });
+      const seg = new Zdog.Shape({ addTo: body, stroke: 140, color: B.yellow });
+      seg.copy({ addTo: body, stroke: 162, color: B.black,  translate: { z: -32 } });
+      seg.copy({ addTo: body, stroke: 168, color: B.yellow, translate: { z: -64 } });
+      seg.copy({ addTo: body, stroke: 156, color: B.black,  translate: { z: -96 } });
+      new Zdog.Shape({ addTo: body, stroke: 108, color: B.black, translate: { z: -123 } });
+
+      // wings (flap in tick)
+      const rightWing = new Zdog.Anchor({ addTo: body, translate: { z: -43, y: -65, x:  29 } });
+      const leftWing  = new Zdog.Anchor({ addTo: body, translate: { z: -43, y: -65, x: -29 } });
+      new Zdog.Ellipse({ addTo: rightWing, width: 80, height: 160, color: B.white, fill: true, rotate: { x: TAU/5, z:  TAU/5 }, translate: { x:  65 }, stroke: 0 });
+      new Zdog.Ellipse({ addTo: leftWing,  width: 80, height: 160, color: B.white, fill: true, rotate: { x: TAU/5, z: -TAU/5 }, translate: { x: -65 }, stroke: 0 });
+
+      return { cont, leftWing, rightWing, antler };
+    }
+
+    bee = createBee(r, BEE_POS.x, BEE_POS.y, BEE_POS.z, BEE_SCALE);
+  }
+
+  // Where the dove's centre lands on screen, in CSS px.
+  // The dove sits under `r` (no rotation of its own) and the scene's spin
+  // lives on illo.rotate.y, so the only rotation on the point is illo.rotate.
+  function doveScreenPos() {
+    const v = new Zdog.Vector(DOVE_POS);
+    v.rotate(illo.rotate);
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: rect.width  / 2 + illo.zoom * (v.x + illo.translate.x),
+      y: rect.height / 2 + illo.zoom * (v.y + illo.translate.y),
+    };
+  }
+
+  function isOnDove(e) {
+    if (!illo) return false;
+    const rect = canvas.getBoundingClientRect();
+    const p = doveScreenPos();
+    const dx = (e.clientX - rect.left) - p.x;
+    const dy = (e.clientY - rect.top)  - p.y;
+    const hitRadius = 80 * DOVE_SCALE * illo.zoom; // generous, scales with zoom
+    return Math.hypot(dx, dy) <= hitRadius;
   }
 
   // Offset of the cursor from the canvas centre, in CSS px.
@@ -201,13 +281,26 @@
     targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom * factor));
   }
 
-  function handlePointerDown() {
+  function handlePointerDown(e) {
+    downX = e.clientX;
+    downY = e.clientY;
     spin = false;
     canvas.style.cursor = 'grabbing';
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e) {
     if (canvas) canvas.style.cursor = 'grab';
+    // a "click" = pointer barely moved (a drag moves much further)
+    const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+    if (moved < 6 && isOnDove(e)) {
+      onSelectDove?.();
+    }
+  }
+
+  // turn the cursor into a pointer when hovering the dove
+  function handlePointerMove(e) {
+    if (!canvas || canvas.style.cursor === 'grabbing') return;
+    canvas.style.cursor = isOnDove(e) ? 'pointer' : 'grab';
   }
 
   onMount(() => {
@@ -228,11 +321,22 @@
       rafId = requestAnimationFrame(tick);
       if (spin) illo.rotate.y += SPIN_SPEED;
 
-      // gentle wing flap (no GSAP — same sin math as the original dove)
+      // gentle dove wing flap (no GSAP — same sin math as the original dove)
       wingBeat += 0.13;
       if (dove) {
         dove.frontWing.rotate.z = Math.sin(wingBeat) * 0.18;
         dove.backWing.rotate.z  = Math.sin(wingBeat - 0.5) * 0.18;
+      }
+
+      // bee buzzing: fast wing flap, antenna bob, gentle hover drift
+      beeFrame++;
+      if (bee) {
+        const f = beeFrame;
+        bee.rightWing.rotate.z = -TAU / 6 + (TAU / 10) * Math.sin(f / 0.9);
+        bee.leftWing.rotate.z  =  TAU / 6 - (TAU / 10) * Math.sin(f / 0.9);
+        bee.antler.rotate.x    = (TAU / 40) * Math.sin(f / 10);
+        bee.cont.translate.y   = BEE_POS.y + Math.sin(f / 14) * 6;
+        bee.cont.translate.x   = BEE_POS.x + Math.cos(f / 28) * 5;
       }
 
       const oldZoom = illo.zoom;
@@ -263,6 +367,7 @@
 <canvas
   bind:this={canvas}
   on:pointerdown={handlePointerDown}
+  on:pointermove={handlePointerMove}
   class="land-canvas"
 ></canvas>
 

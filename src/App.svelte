@@ -27,7 +27,7 @@
       </div>
     </div>
   {:else if page === 'land'}
-    <Land on:back={() => openPage('menu')} />
+    <Land on:back={() => openPage('menu')} onSelectDove={() => openPage('dove')} />
   {:else if page === 'bee'}
     <Bee on:back={() => openPage('menu')} />
   {:else if page === 'chicken'}
