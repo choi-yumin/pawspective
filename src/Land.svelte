@@ -467,7 +467,8 @@
       dragRotate: false, // Disabled to lock axis
       resize: 'window',
       zoom: START_ZOOM,
-      rotate: { x: -TAU / 9, y: TAU / 10 },
+      rotate: { x: -0.1, y: TAU / 10 },
+      // rotate: { x: -TAU / 9, y: TAU / 10 },
     });
 
     buildScene(illo);
@@ -532,6 +533,10 @@
   });
 </script>
 
+<!-- <div class="hero-container">
+  <h1>Pawspective</h1>
+</div> -->
+
 <canvas
   bind:this={canvas}
   on:pointerdown={handlePointerDown}
@@ -541,6 +546,23 @@
 
 <style>
   :global(html, body) { height: 100%; margin: 0; overflow: hidden; }
+  .hero-container {
+    position: fixed;
+    top: 10%;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  h1 {
+    font-size: 5rem;
+    color: #4A7B28;
+    text-shadow: 2px 2px 0px rgba(255,255,255,0.8);
+    margin: 0;
+    letter-spacing: -2px;
+  }
   .land-canvas {
     position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
     background: #FFD9EC; cursor: grab; touch-action: none; display: block; border: none;
