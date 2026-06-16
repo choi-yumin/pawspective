@@ -1,15 +1,17 @@
 <script>
-//@ts-nocheck
-  import { onMount } from 'svelte';
+  //@ts-nocheck
+  import { onMount, createEventDispatcher } from 'svelte';
   import Zdog from 'zdog';
   import { gsap } from 'gsap';
+
+  const dispatch = createEventDispatcher();
 
   let canvasRef;
   let uiCanvasRef;
   let overlayCanvasRef; 
-  let wrapperRef; 
+  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
   
-  let { embedded = false } = $props();
+  export let embedded = false;
   
   // --- Environment & State Management ---
   let isDeep = false;
@@ -41,11 +43,6 @@
   let sceneryFadeShapes = [];
 
   // --- UI Positioning States ---
-  let clickCoords = { x: 0, y: 0 }; 
-  let fishScreenCoords = { x: 0, y: 0 }; 
-
-  let radialMenuOpen = false;
-  let activeCard = null;
   let historyOpen = false;
   
   let thoughtBubbleVisible = false;
@@ -56,6 +53,7 @@
   let bubbleAutoHideTimer = null;
   let isApiLoading = false;
   let conversationActive = false;
+  let replyInputRef;
 
   // Gesture Tracking for Double Tap
   let lastClickTime = 0;
@@ -65,29 +63,20 @@
     {
       id: 'float',
       icon: '🔄',
-      label: 'Float Around',
-      title: 'Orbit Swimming',
-      description: 'Command the blobfish to drift passively in a large horizontal tracking orbit.',
-      hint: 'The fish will drift in a smooth, sweeping horizontal circle.',
-      angle: -90
+      label: 'Float',
+      description: 'Orbit Swimming'
     },
     {
       id: 'jump',
       icon: '🐬',
       label: 'Jump',
-      title: 'Breaching Leap',
-      description: 'Watch the fish break dynamics to launch an airborne trajectory arc.',
-      hint: 'Jumps directly if shallow. If deep, it surfaces rapidly before launching.',
-      angle: 30
+      description: 'Breaching Leap'
     },
     {
       id: 'chat',
       icon: '💬',
       label: 'Chat',
-      title: 'Consult the Blobfish',
-      description: 'Uncover deep sub-surface wisdom regarding atmospheric pressure and inner structural integrity.',
-      hint: 'Reply to the active bubble thoughts below.',
-      angle: 150
+      description: 'Consult the Blobfish'
     }
   ];
 
@@ -121,79 +110,15 @@
   ];
 
   const color = {
-    blobSkin: '#F4B8C2',
-    blobNose: '#F3AEBB',
-    blobFin: '#C97A8D',
-    blobMouth: '#6B3A45',
-    blobTailBody: '#D88A9D',
-    blobDeepSea: '#6C8EA4',
-    blobDeepSeaDark: '#4A6578',
-    blobMouthDeep: '#334856',
-    blobEyeDeep: '#94b3c7',
-    blobPupilDeep: '#1d2a33',
-    waterTransition: '#1C2541',
-    seaweedDark: '26, 54, 39',   
-    seaweedLight: '53, 94, 59',
-    
-    // Multi-tier solid color ecosystem
-    bgSky: '#ff8fae',
-    bgPinkWater: '#FAD0C4',
-    bgMidWater: '#4A90E2',
-    bgTransBlue1: '#3B78C4', 
-    bgTransBlue2: '#2B5FA6',
-    bgDeepWater: '#1C2541',
-    bgAbyss: '#0B132B',
-
-    // Scenery color configurations
-    landGreen: '#6CA35E',
-    landGreenDark: '#4E8241',
-    cloudBody: 'rgba(255, 255, 255, 0.75)'
+    blobSkin: '#F4B8C2', blobNose: '#F3AEBB', blobFin: '#C97A8D', blobMouth: '#6B3A45', blobTailBody: '#D88A9D',
+    blobDeepSea: '#6C8EA4', blobDeepSeaDark: '#4A6578', blobMouthDeep: '#334856', blobEyeDeep: '#94b3c7', blobPupilDeep: '#1d2a33',
+    waterTransition: '#1C2541', seaweedDark: '26, 54, 39', seaweedLight: '53, 94, 59',
+    bgSky: '#ff8fae', bgPinkWater: '#FAD0C4', bgMidWater: '#4A90E2', bgTransBlue1: '#3B78C4', bgTransBlue2: '#2B5FA6',
+    bgDeepWater: '#1C2541', bgAbyss: '#0B132B', landGreen: '#6CA35E', landGreenDark: '#4E8241', cloudBody: 'rgba(255, 255, 255, 0.75)'
   };
-
-  function toggleRadialMenu(clientX, clientY) {
-    radialMenuOpen = !radialMenuOpen;
-    if (radialMenuOpen) {
-      clickCoords = { x: clientX, y: clientY };
-      activeCard = null; 
-      historyOpen = false;
-    }
-  }
-
-  function openCard(id) {
-    activeCard = interactionCards.find(c => c.id === id);
-    radialMenuOpen = false;
-  }
-
-  function closeCard() { activeCard = null; }
-
-  function executeCard() {
-    if (!activeCard) return;
-    if (activeCard.id === 'float') triggerFloatAnimation();
-    if (activeCard.id === 'jump') triggerJumpAnimation();
-    if (activeCard.id === 'chat') {
-      activeCard = null;
-      openReplyInput(); 
-      return;
-    }
-    activeCard = null;
-  }
 
   function toggleHistory() {
     historyOpen = !historyOpen;
-    if (historyOpen) { radialMenuOpen = false; activeCard = null; }
-  }
-
-  function updateBubblePosition() {
-    if (!canvasRef || !fishZone) return;
-    const rect = canvasRef.getBoundingClientRect();
-    
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    fishScreenCoords = {
-      x: centerX + fishZone.translate.x,
-      y: centerY + fishZone.translate.y
-    };
   }
 
   function showThought(text, keepAlive = false) {
@@ -201,8 +126,6 @@
     thoughtBubbleText = text;
     thoughtBubbleVisible = true;
     conversationActive = keepAlive;
-    isReplying = false;
-    updateBubblePosition();
 
     if (!keepAlive && !isReplying) {
       bubbleAutoHideTimer = setTimeout(() => {
@@ -214,7 +137,8 @@
   function openReplyInput() {
     if (bubbleAutoHideTimer) clearTimeout(bubbleAutoHideTimer);
     isReplying = true;
-    updateBubblePosition();
+    thoughtBubbleVisible = true;
+    setTimeout(() => replyInputRef?.focus(), 50);
   }
 
   function scheduleThought() {
@@ -233,7 +157,6 @@
     if (!msg || isApiLoading) return;
     replyInputValue = '';
     isReplying = false;
-    thoughtBubbleVisible = false;
     await askFish(msg);
   }
 
@@ -253,10 +176,7 @@
       const endpoint = 'https://api.openai.com/v1/chat/completions';
       const body = {
         model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are a wise blobfish' },
-          ...chatHistory
-        ],
+        messages: [{ role: 'system', content: 'You are a wise blobfish' }, ...chatHistory],
         max_tokens: 256,
         temperature: 0.85
       };
@@ -282,7 +202,6 @@
         showThought("The currents are scrambled... I lost my thread of thought.", true);
       }
     } catch (e) {
-      console.error(e);
       chatHistory = chatHistory.slice(0, -1);
       showThought("Too much static in the water right now. Ask me again shortly...", true);
     } finally {
@@ -294,7 +213,6 @@
   let isMeshRunningAnimation = false;
   let customFinSpeedFactor = 1;
   let customTailSpeedFactor = 1;
-  let expressionModifierActive = false;
 
   function triggerFloatAnimation() {
     if (isMeshRunningAnimation) return;
@@ -312,14 +230,7 @@
     });
 
     tl.to(fishZone.rotate, { duration: 3.5, y: `-=${Zdog.TAU}`, ease: 'none' });
-    tl.to(fishZone.translate, { 
-      duration: 1.75, 
-      x: -160, 
-      z: -100, 
-      ease: 'sine.inOut', 
-      yoyo: true, 
-      repeat: 1 
-    }, 0);
+    tl.to(fishZone.translate, { duration: 1.75, x: -160, z: -100, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
   }
 
   function triggerJumpAnimation() {
@@ -340,7 +251,6 @@
     if (isDeep) {
       tl.to(fishZone.translate, { duration: 1.2, y: -260, z: 40, ease: 'power2.out' });
       tl.to(fishZone.rotate, { duration: 0.8, x: -0.4 }, 0);
-      
       tl.to(fishZone.translate, { duration: 0.5, y: -500, z: 120, ease: 'power1.out' }, '+=0.1');
       tl.to(fishZone.rotate, { duration: 1.0, x: `+=${Zdog.TAU}`, ease: 'power1.inOut' }, '-=0.2');
       tl.to(fishZone.translate, { duration: 0.6, y: 0, z: 0, ease: 'power2.in' });
@@ -357,7 +267,6 @@
     tl.to([rightPecContainer.rotate, rightWingContainer.rotate], { duration: 0.3, y: -0.4, ease: 'sine.inOut', repeat: 3, yoyo: true }, 0);
   }
 
-  // --- Core Mechanical Helpers ---
   function hexToRgb(hex) {
     if(hex.startsWith('rgba')) return { r:255, g:255, b:255 }; 
     return {
@@ -385,18 +294,15 @@
   const sensitivity = 0.008;
 
   function onPointerDown(e) {
-    isDragging = true; 
-    wasDragging = false;
-    lastX = e.clientX; 
-    lastY = e.clientY;
+    isDragging = true; wasDragging = false;
+    lastX = e.clientX; lastY = e.clientY;
     try { canvasRef.setPointerCapture(e.pointerId); } catch (_) {}
   }
 
   function onPointerMove(e) {
     if (!isDragging) return;
     const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    lastX = e.clientX; 
-    lastY = e.clientY;
+    lastX = e.clientX; lastY = e.clientY;
     if (Math.hypot(dx, dy) > 8) { wasDragging = true; }
     
     fishZone.rotate.y += dx * sensitivity;
@@ -416,16 +322,15 @@
     if (Math.hypot(cx, cy) < fishRadiusThreshold) {
       const currentTime = Date.now();
       
-      // Check for Double Click / Double Tap (interval < 300ms)
       if (currentTime - lastClickTime < 300) {
         clearTimeout(clickTimeout);
-        radialMenuOpen = false;
         triggerJumpAnimation();
       } else {
-        // Queue single click menu switch safely to rule out double tap intents
         clearTimeout(clickTimeout);
         clickTimeout = setTimeout(() => {
-          toggleRadialMenu(fishScreenCoords.x, fishScreenCoords.y);
+          if (!isApiLoading && !isReplying) {
+             showThought("Did you poke me? I'm quite squishy... Use the buttons below to interact.", false);
+          }
         }, 250);
       }
       lastClickTime = currentTime;
@@ -437,36 +342,22 @@
     function resizeOverlay() {
       overlayCanvasRef.width = window.innerWidth;
       overlayCanvasRef.height = window.innerHeight;
-      updateBubblePosition();
     }
     resizeOverlay();
     window.addEventListener('resize', resizeOverlay);
 
-    // SCENE GENERATION
     scene = new Zdog.Illustration({
-      element: canvasRef,
-      dragRotate: false,
-      resize: 'window',
-      rotate: { x: 0, y: -0.12 }, 
+      element: canvasRef, dragRotate: false, resize: 'window', rotate: { x: 0, y: -0.12 }, 
     });
 
-    // Layer 1: Background Sky Vector Objects Group
     backgroundZone = new Zdog.Anchor({ addTo: scene, translate: { z: -450 } });
 
     skyBlock = new Zdog.Shape({
       addTo: backgroundZone,
-      path: [
-        { x: -1200, y: -900 },
-        { x: 1200, y: -900 },
-        { x: 1200, y: -260 },
-        { arc: [ { x: 0, y: -200 }, { x: -1200, y: -260 } ] }
-      ],
-      stroke: 40,
-      color: color.bgSky,
-      fill: true
+      path: [{ x: -1200, y: -900 }, { x: 1200, y: -900 }, { x: 1200, y: -260 }, { arc: [ { x: 0, y: -200 }, { x: -1200, y: -260 } ] }],
+      stroke: 40, color: color.bgSky, fill: true
     });
 
-    // Layer 1.5: Clouds high up in the sky space
     sceneryZone = new Zdog.Anchor({ addTo: scene, translate: { z: -420 } });
 
     cloud1 = new Zdog.Anchor({ addTo: sceneryZone, translate: { x: -350, y: -450 } });
@@ -483,90 +374,44 @@
     new Zdog.Shape({ addTo: cloud3, stroke: 38, color: color.cloudBody });
     new Zdog.Shape({ addTo: cloud3, stroke: 28, color: color.cloudBody, translate: { x: -24, y: 4 } });
 
-    // Islands preserved right where they are
-    let leftIsland = new Zdog.Shape({
+    new Zdog.Shape({
       addTo: sceneryZone,
-      path: [
-        { x: -800, y: 20 },
-        { arc: [ { x: -500, y: -200 }, { x: -200, y: 20 } ] },
-        { x: -200, y: 20 },
-        { x: -800, y: 20 }
-      ],
-      stroke: 20,
-      color: color.landGreenDark,
-      fill: true
+      path: [{ x: -800, y: 20 }, { arc: [ { x: -500, y: -200 }, { x: -200, y: 20 } ] }, { x: -200, y: 20 }, { x: -800, y: 20 }],
+      stroke: 20, color: color.landGreenDark, fill: true
     });
 
-    let rightIsland = new Zdog.Shape({
+    new Zdog.Shape({
       addTo: sceneryZone,
-      path: [
-        { x: 200, y: 20 },
-        { arc: [ { x: 500, y: -240 }, { x: 800, y: 20 } ] },
-        { x: 800, y: 20 },
-        { x: 200, y: 20 }
-      ],
-      stroke: 20,
-      color: color.landGreenDark,
-      fill: true
+      path: [{ x: 200, y: 20 }, { arc: [ { x: 500, y: -240 }, { x: 800, y: 20 } ] }, { x: 800, y: 20 }, { x: 200, y: 20 }],
+      stroke: 20, color: color.landGreenDark, fill: true
     });
 
-    // Layer 1.8: Water Volumes Group
     midBlock = new Zdog.Shape({
       addTo: backgroundZone,
-      path: [
-        { x: -1200, y: -280 },
-        { arc: [ { x: 0, y: -220 }, { x: 1200, y: -280 } ] },
-        { x: 1200, y: 50 },
-        { arc: [ { x: 0, y: 110 }, { x: -1200, y: 50 } ] }
-      ],
-      stroke: 50,
-      color: color.bgPinkWater,
-      fill: true
+      path: [{ x: -1200, y: -280 }, { arc: [ { x: 0, y: -220 }, { x: 1200, y: -280 } ] }, { x: 1200, y: 50 }, { arc: [ { x: 0, y: 110 }, { x: -1200, y: 50 } ] }],
+      stroke: 50, color: color.bgPinkWater, fill: true
     });
 
     midTransitionBlock = new Zdog.Shape({
       addTo: backgroundZone,
-      path: [
-        { x: -1200, y: 30 },
-        { arc: [ { x: 0, y: 90 }, { x: 1200, y: 30 } ] },
-        { x: 1200, y: 280 },
-        { arc: [ { x: 0, y: 340 }, { x: -1200, y: 280 } ] }
-      ],
-      stroke: 50,
-      color: color.bgMidWater,
-      fill: true
+      path: [{ x: -1200, y: 30 }, { arc: [ { x: 0, y: 90 }, { x: 1200, y: 30 } ] }, { x: 1200, y: 280 }, { arc: [ { x: 0, y: 340 }, { x: -1200, y: 280 } ] }],
+      stroke: 50, color: color.bgMidWater, fill: true
     });
 
     deepTransitionBlock = new Zdog.Shape({
       addTo: backgroundZone,
-      path: [
-        { x: -1200, y: 260 },
-        { arc: [ { x: 0, y: 320 }, { x: 1200, y: 260 } ] },
-        { x: 1200, y: 540 },
-        { arc: [ { x: 0, y: 600 }, { x: -1200, y: 540 } ] }
-      ],
-      stroke: 50,
-      color: color.bgTransBlue1,
-      fill: true
+      path: [{ x: -1200, y: 260 }, { arc: [ { x: 0, y: 320 }, { x: 1200, y: 260 } ] }, { x: 1200, y: 540 }, { arc: [ { x: 0, y: 600 }, { x: -1200, y: 540 } ] }],
+      stroke: 50, color: color.bgTransBlue1, fill: true
     });
 
-      abyssBlock = new Zdog.Shape({
-        addTo: backgroundZone,
-        path: [
-          { x: -1200, y: 520 },
-          { arc: [ { x: 0, y: 580 }, { x: 1200, y: 520 } ] },
-          { x: 1200, y: 2500 }, // Increased from 1200 to 2500 to cover lower viewports
-          { x: -1200, y: 2500 } // Increased from 1200 to 2500
-        ],
-        stroke: 50,
-        color: color.bgTransBlue2,
-        fill: true
-      });
+    abyssBlock = new Zdog.Shape({
+      addTo: backgroundZone,
+      path: [{ x: -1200, y: 520 }, { arc: [ { x: 0, y: 580 }, { x: 1200, y: 520 } ] }, { x: 2500, y: 2500 }, { x: -2500, y: 2500 }],
+      stroke: 50, color: color.bgTransBlue2, fill: true
+    });
 
-    // Layer 2: Fish Interactive Space Group
     fishZone = new Zdog.Anchor({ addTo: scene });
 
-    // --- Blobfish (Surface - Pink) ---
     blobMasterAnchor = new Zdog.Anchor({ addTo: fishZone, scale: 2 });
     new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 260, color: color.blobSkin });
     new Zdog.Shape({ addTo: blobMasterAnchor, stroke: 180, color: color.blobSkin, translate: { y: -40, z: 6 } });
@@ -583,29 +428,23 @@
     new Zdog.Shape({ addTo: eyeR_pink, stroke: 12, color: '#111111', translate: { z: 6 } });
 
     mouth_pink = new Zdog.Shape({
-      addTo: blobMasterAnchor,
-      stroke: 14,
-      color: color.blobMouth,
-      closed: false,
+      addTo: blobMasterAnchor, stroke: 14, color: color.blobMouth, closed: false,
       path: [{ x: -28, y: 40, z: 44 }, { bezier: [{ x: -12, y: 28, z: 54 }, { x: 12, y: 28, z: 54 }, { x: 28, y: 40, z: 44 }] }]
     });
 
     const finShapePath = [{ x: 0, y: 0 }, { x: -30, y: -10 }, { x: -50, y: 15 }, { x: -40, y: 35 }, { x: -10, y: 25 }];
 
     leftPecContainer = new Zdog.Anchor({ addTo: blobMasterAnchor });
-    const leftPecAnchor = new Zdog.Anchor({ addTo: leftPecContainer, translate: { x: -52, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: leftPecAnchor, path: finShapePath, stroke: 24, color: color.blobFin, fill: true });
+    new Zdog.Shape({ addTo: new Zdog.Anchor({ addTo: leftPecContainer, translate: { x: -52, y: 22, z: -8 } }), path: finShapePath, stroke: 24, color: color.blobFin, fill: true });
 
     rightPecContainer = new Zdog.Anchor({ addTo: blobMasterAnchor });
-    const rightPecAnchor = new Zdog.Anchor({ addTo: rightPecContainer, translate: { x: 52, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: rightPecAnchor, path: finShapePath, scale: { x: -1 }, stroke: 24, color: color.blobFin, fill: true });
+    new Zdog.Shape({ addTo: new Zdog.Anchor({ addTo: rightPecContainer, translate: { x: 52, y: 22, z: -8 } }), path: finShapePath, scale: { x: -1 }, stroke: 24, color: color.blobFin, fill: true });
 
     const blobTail = new Zdog.Anchor({ addTo: blobMasterAnchor, translate: { y: 10, z: -68 } });
     new Zdog.Shape({ addTo: blobTail, stroke: 52, color: color.blobTailBody });
     blobTailFin = new Zdog.Anchor({ addTo: blobTail, translate: { z: -14 } });
     new Zdog.Shape({ addTo: blobTailFin, stroke: 32, color: color.blobFin, closed: false, path: [{ y: 0, z: 0 }, { bezier: [{ x: -6, y: -8, z: -4 }, { x: -12, y: -12, z: -8 }, { x: 0, y: -18, z: -14 }] }] });
 
-    // --- Handsome Blobfish (Deep - Blue) ---
     handsomeMasterAnchor = new Zdog.Anchor({ addTo: fishZone, scale: 3 });
     new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 240, color: color.blobDeepSea });
     new Zdog.Shape({ addTo: handsomeMasterAnchor, stroke: 190, color: color.blobDeepSea, translate: { z: -30 } });
@@ -621,20 +460,15 @@
     new Zdog.Shape({ addTo: eyeR_blue, stroke: 14, color: color.blobPupilDeep, translate: { z: 6 } });
 
     mouth_blue = new Zdog.Shape({
-      addTo: handsomeMasterAnchor,
-      stroke: 11,
-      color: color.blobMouthDeep,
-      closed: false,
+      addTo: handsomeMasterAnchor, stroke: 11, color: color.blobMouthDeep, closed: false,
       path: [{ x: -18, y: 10, z: 25 }, { x: 0, y: 14, z: 27 }, { x: 18, y: 10, z: 25 }]
     });
 
     leftWingContainer = new Zdog.Anchor({ addTo: handsomeMasterAnchor });
-    const leftWingFin = new Zdog.Anchor({ addTo: leftWingContainer, translate: { x: -48, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: leftWingFin, path: finShapePath, scale: { x: 0.666, y: 0.666, z: 0.666 }, stroke: 16, color: color.blobDeepSeaDark, fill: true });
+    new Zdog.Shape({ addTo: new Zdog.Anchor({ addTo: leftWingContainer, translate: { x: -48, y: 22, z: -8 } }), path: finShapePath, scale: { x: 0.666, y: 0.666, z: 0.666 }, stroke: 16, color: color.blobDeepSeaDark, fill: true });
 
     rightWingContainer = new Zdog.Anchor({ addTo: handsomeMasterAnchor });
-    const rightWingFin = new Zdog.Anchor({ addTo: rightWingContainer, translate: { x: 48, y: 22, z: -8 } });
-    new Zdog.Shape({ addTo: rightWingFin, path: finShapePath, scale: { x: -0.666, y: 0.666, z: 0.666 }, stroke: 16, color: color.blobDeepSeaDark, fill: true });
+    new Zdog.Shape({ addTo: new Zdog.Anchor({ addTo: rightWingContainer, translate: { x: 48, y: 22, z: -8 } }), path: finShapePath, scale: { x: -0.666, y: 0.666, z: 0.666 }, stroke: 16, color: color.blobDeepSeaDark, fill: true });
 
     const handsomeTail = new Zdog.Anchor({ addTo: handsomeMasterAnchor, translate: { y: -4, z: -72 } });
     new Zdog.Shape({ addTo: handsomeTail, stroke: 60, color: color.blobDeepSea });
@@ -645,12 +479,7 @@
     darkFadeShapes = setupFadeGroup(handsomeMasterAnchor);
     sceneryFadeShapes = setupFadeGroup(sceneryZone);
 
-    // FIXED UI GAUGE
-    uiScene = new Zdog.Illustration({
-      element: uiCanvasRef,
-      dragRotate: false,
-      resize: false
-    });
+    uiScene = new Zdog.Illustration({ element: uiCanvasRef, dragRotate: false, resize: false });
 
     const UIAnchor = new Zdog.Anchor({ addTo: uiScene, translate: { x: 0, y: 0 } });
     new Zdog.Cylinder({ addTo: UIAnchor, diameter: 82, length: 16, stroke: false, color: '#7f8c8d', backface: '#34495e' });
@@ -658,14 +487,7 @@
 
     for (let i = 0; i < 6; i++) {
       let angle = (i / 5) * Math.PI - Math.PI;
-      new Zdog.Shape({
-        addTo: UIAnchor,
-        path: [{ y: -26 }, { y: -32 }],
-        stroke: 3,
-        color: '#e74c3c',
-        rotate: { z: angle },
-        translate: { z: 9.5 }
-      });
+      new Zdog.Shape({ addTo: UIAnchor, path: [{ y: -26 }, { y: -32 }], stroke: 3, color: '#e74c3c', rotate: { z: angle }, translate: { z: 9.5 } });
     }
 
     gaugeNeedle = new Zdog.Anchor({ addTo: UIAnchor, translate: { z: 11 }, rotate: { z: -Math.PI * 0.75 } });
@@ -675,46 +497,38 @@
     uiScene.updateRenderGraph();
     scheduleThought();
 
-    // RENDERING MECHANICS LOOP
-    let frame = 0;
-    let running = true;
+    let frame = 0; let running = true;
 
     function drawSeaweed() {
       if (fishState.darkAlpha < 0.01) return; 
-      const w = overlayCanvasRef.width;
-      const h = overlayCanvasRef.height;
+      const w = overlayCanvasRef.width; const h = overlayCanvasRef.height;
 
       seaweedStrands.forEach((strand, idx) => {
         const baseX = w * strand.xPct;
         const currentHeight = strand.height * fishState.darkAlpha;
         const greenTone = idx % 2 === 0 ? color.seaweedDark : color.seaweedLight;
 
-        ctx.save();
-        ctx.beginPath();
+        ctx.save(); ctx.beginPath();
         ctx.fillStyle = `rgba(${greenTone}, ${0.65 * fishState.darkAlpha})`;
 
         const segments = 7;
-        let leftSidePoints = [];
-        let rightSidePoints = [];
+        let leftSidePoints = [], rightSidePoints = [];
 
         for (let i = 0; i <= segments; i++) {
           const segmentPct = i / segments;
           const yPos = h + 30 - (currentHeight * segmentPct);
           const waveFactor = Math.sin((frame * strand.speed) + (segmentPct * Math.PI * 1.2) + strand.delay);
           const xOffset = waveFactor * (25 * segmentPct);
-          const centerX = baseX + xOffset;
           const currentWidth = strand.baseWidth * (1 - segmentPct);
 
-          leftSidePoints.push({ x: centerX - currentWidth / 2, y: yPos });
-          rightSidePoints.unshift({ x: centerX + currentWidth / 2, y: yPos });
+          leftSidePoints.push({ x: baseX + xOffset - currentWidth / 2, y: yPos });
+          rightSidePoints.unshift({ x: baseX + xOffset + currentWidth / 2, y: yPos });
         }
 
         ctx.moveTo(leftSidePoints[0].x, leftSidePoints[0].y);
         leftSidePoints.forEach(pt => ctx.lineTo(pt.x, pt.y));
         rightSidePoints.forEach(pt => ctx.lineTo(pt.x, pt.y));
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
+        ctx.closePath(); ctx.fill(); ctx.restore();
       });
     }
 
@@ -725,20 +539,15 @@
       let progress = transitionProgress.value;
       if (progress <= 0 || progress >= 1) return;
 
-      const w = overlayCanvasRef.width;
-      const h = overlayCanvasRef.height;
+      const w = overlayCanvasRef.width; const h = overlayCanvasRef.height;
       ctx.fillStyle = color.waterTransition;
 
-      const numBars = 3;
-      const barThickness = Math.max(w, h) * 0.4;
+      const numBars = 3; const barThickness = Math.max(w, h) * 0.4;
       
       for (let i = 0; i < numBars; i++) {
-        let barProgress = gsap.utils.mapRange(i * 0.1, 1 - (numBars - 1 - i) * 0.1, 0, 1, progress);
-        barProgress = gsap.utils.clamp(0, 1, barProgress);
-
+        let barProgress = gsap.utils.clamp(0, 1, gsap.utils.mapRange(i * 0.1, 1 - (numBars - 1 - i) * 0.1, 0, 1, progress));
         ctx.save();
-        let centerX = -barThickness + (w + barThickness * 2) * barProgress;
-        ctx.translate(centerX, h / 2);
+        ctx.translate(-barThickness + (w + barThickness * 2) * barProgress, h / 2);
         ctx.rotate(-Math.PI / 6); 
         ctx.fillRect(-barThickness / 2, -h * 1.5, barThickness, h * 3);
         ctx.restore();
@@ -758,23 +567,12 @@
       cloud2.translate.x += 0.16; if (cloud2.translate.x > 950) cloud2.translate.x = -950;
       cloud3.translate.x += 0.22; if (cloud3.translate.x > 950) cloud3.translate.x = -950;
 
-      backgroundZone.rotate.y = -scene.rotate.y;
-      backgroundZone.rotate.x = -scene.rotate.x;
-      sceneryZone.rotate.y = -scene.rotate.y;
-      sceneryZone.rotate.x = -scene.rotate.x;
+      backgroundZone.rotate.y = -scene.rotate.y; backgroundZone.rotate.x = -scene.rotate.x;
+      sceneryZone.rotate.y = -scene.rotate.y; sceneryZone.rotate.x = -scene.rotate.x;
 
-      updateBubblePosition();
-
-      pinkFadeShapes.forEach(({ node, r, g, b }) => {
-        node.color = `rgba(${r},${g},${b},${fishState.pinkAlpha})`;
-      });
-      darkFadeShapes.forEach(({ node, r, g, b }) => {
-        node.color = `rgba(${r},${g},${b},${fishState.darkAlpha})`;
-      });
-
-      sceneryFadeShapes.forEach(({ node, r, g, b }) => {
-        node.color = `rgba(${r},${g},${b},${fishState.pinkAlpha})`;
-      });
+      pinkFadeShapes.forEach(({ node, r, g, b }) => node.color = `rgba(${r},${g},${b},${fishState.pinkAlpha})`);
+      darkFadeShapes.forEach(({ node, r, g, b }) => node.color = `rgba(${r},${g},${b},${fishState.darkAlpha})`);
+      sceneryFadeShapes.forEach(({ node, r, g, b }) => node.color = `rgba(${r},${g},${b},${fishState.pinkAlpha})`);
       
       cloud1.children.forEach(c => c.color = `rgba(255,255,255,${0.75 * fishState.pinkAlpha})`);
       cloud2.children.forEach(c => c.color = `rgba(255,255,255,${0.75 * fishState.pinkAlpha})`);
@@ -794,21 +592,11 @@
 
       const blink = frame % 280;
       let s_blink = 1;
-      if (blink > 262) {
-        s_blink = 0.5 + 0.5 * Math.cos(((blink - 262) / 18) * Math.PI * 2);
-      }
+      if (blink > 262) s_blink = 0.5 + 0.5 * Math.cos(((blink - 262) / 18) * Math.PI * 2);
       
-      if (!expressionModifierActive) {
-        eyeL_pink.scale.y = s_blink;
-        eyeR_pink.scale.y = s_blink;
-        eyeL_blue.scale.y = s_blink;
-        eyeR_blue.scale.y = s_blink;
-      }
+      eyeL_pink.scale.y = eyeR_pink.scale.y = eyeL_blue.scale.y = eyeR_blue.scale.y = s_blink;
 
-      scene.updateRenderGraph();
-      uiScene.updateRenderGraph();
-      drawWaterTransition();
-      
+      scene.updateRenderGraph(); uiScene.updateRenderGraph(); drawWaterTransition();
       requestAnimationFrame(render);
     }
 
@@ -835,190 +623,266 @@
     });
 
     tl.to([skyBlock.translate, midBlock.translate, midTransitionBlock.translate, deepTransitionBlock.translate, abyssBlock.translate, sceneryZone.translate], {
-      duration: 2.5,
-      y: isDeep ? -850 : 0,
-      ease: 'power2.inOut'
+      duration: 2.5, y: isDeep ? -850 : 0, ease: 'power2.inOut'
     }, 0);
 
     tl.to({}, {
       duration: 1.25,
       onComplete: () => {
         if (isDeep) {
-          skyBlock.color = color.bgTransBlue1;
-          midBlock.color = color.bgTransBlue2;
-          midTransitionBlock.color = color.bgDeepWater;
-          deepTransitionBlock.color = color.bgAbyss;
-          abyssBlock.color = '#040714'; 
+          skyBlock.color = color.bgTransBlue1; midBlock.color = color.bgTransBlue2;
+          midTransitionBlock.color = color.bgDeepWater; deepTransitionBlock.color = color.bgAbyss; abyssBlock.color = '#040714'; 
         } else {
-          skyBlock.color = color.bgSky;
-          midBlock.color = color.bgPinkWater;
-          midTransitionBlock.color = color.bgMidWater;
-          deepTransitionBlock.color = color.bgTransBlue1;
-          abyssBlock.color = color.bgTransBlue2;
+          skyBlock.color = color.bgSky; midBlock.color = color.bgPinkWater;
+          midTransitionBlock.color = color.bgMidWater; deepTransitionBlock.color = color.bgTransBlue1; abyssBlock.color = color.bgTransBlue2;
         }
       }
     }, 0.6);
 
-    tl.to(gaugeNeedle.rotate, {
-      duration: 2.5,
-      z: isDeep ? Math.PI * 0.75 : -Math.PI * 0.75,
-      ease: 'back.out(1.2)'
-    }, 0);
+    tl.to(gaugeNeedle.rotate, { duration: 2.5, z: isDeep ? Math.PI * 0.75 : -Math.PI * 0.75, ease: 'back.out(1.2)' }, 0);
 
     transitionProgress.value = 0;
-    tl.to(transitionProgress, {
-      duration: 1.4,
-      value: 1,
-      ease: 'power1.inOut'
-    }, 0.55);
+    tl.to(transitionProgress, { duration: 1.4, value: 1, ease: 'power1.inOut' }, 0.55);
 
-    tl.to({}, { duration: 0 }, 1.25); 
     tl.call(() => {
-      if (isDeep) {
-        fishState.pinkAlpha = 0;
-        fishState.darkAlpha = 1;
-      } else {
-        fishState.pinkAlpha = 1;
-        fishState.darkAlpha = 0;
-      }
+      fishState.pinkAlpha = isDeep ? 0 : 1;
+      fishState.darkAlpha = isDeep ? 1 : 0;
     }, null, 1.25); 
   }
 </script>
 
-<style>
-  @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
-  
-  /* Локальные стили для кнопок навигации */
-  .custom-top-bar {
-    position: absolute;
-    top: 16px; 
-    left: 16px;
-    display: flex; 
-    gap: 10px;
-    z-index: 50;
-  }
-
-  .custom-bar-btn {
-    padding: 9px 16px;
-    border: none; 
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.92);
-    color: #5A1A30;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700; 
-    font-size: 0.85rem;
-    cursor: pointer;
-    box-shadow: 0 4px 18px rgba(90, 26, 48, 0.10);
-    transition: background 0.15s, transform 0.1s;
-  }
-  .custom-bar-btn:hover { 
-    background: #ffffff; 
-    transform: translateY(-1px); 
-  }
-  .custom-bar-btn:active { 
-    transform: scale(0.96); 
-  }
-</style>
-
-<div 
-  bind:this={wrapperRef} 
-  style="position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; user-select: none; background-color: #ff8fae; font-family: 'Nunito', sans-serif;"
->
-  <div class="custom-top-bar">
-    <button 
-      class="custom-bar-btn"
-      onclick={() => window.location.href = '/land'} 
-    >
-      ←
-    </button>
-
-    <button 
-      class="custom-bar-btn"
-      onclick={toggleHistory}
-    >
+{#if !embedded}
+  <div class="top-bar">
+    <button class="bar-btn" on:click={() => dispatch('back')}>←</button>
+    <button class="bar-btn" on:click={toggleHistory}>
       {historyOpen ? 'Close history' : '💬 History'}
     </button>
   </div>
-  
-  <button 
-    style="position: absolute; top: 25px; right: 25px; background: none; border: none; padding: 0; cursor: pointer; z-index: 10; width: 150px; height: 150px;" 
-    onclick={handleDiveToggle} 
-    aria-label="Toggle Sea Depth"
-  >
-    <canvas bind:this={uiCanvasRef} width="150" height="150" style="display: block; width: 150px; height: 150px;"></canvas>
-  </button>
+{/if}
 
-  <canvas 
-    bind:this={canvasRef} 
-    style="width: 100%; height: 100%; cursor: grab; touch-action: none; z-index: 1; {embedded ? 'position: absolute; inset: 0;' : ''}"
-    onpointerdown={onPointerDown}
-    onpointermove={onPointerMove}
-    onpointerup={onPointerUp}
-    onclick={onCanvasClick}
-  ></canvas>
-  
-  <canvas bind:this={overlayCanvasRef} style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;"></canvas>
-
-  {#if !embedded && radialMenuOpen}
-    <div style="position: absolute; z-index: 30; left: {clickCoords.x}px; top: {clickCoords.y}px;">
-      {#each interactionCards as card}
-        <button 
-          style="position: absolute; transform: rotate({card.angle}deg) translate(140px) rotate(-{card.angle}deg);"
-          onclick={() => openCard(card.id)}
-        >
-          <span>{card.icon}</span>
-          <span>{card.label}</span>
-        </button>
+{#if historyOpen}
+  <div class="history-panel">
+    <div class="history-header">
+      <h2>Session chat</h2>
+      <button class="close-btn" on:click={() => historyOpen = false}>✕</button>
+    </div>
+    <div class="history-scroll">
+      {#each chatHistory as msg}
+        <div class="history-msg {msg.role}">
+          <span class="history-label">{msg.role === 'assistant' ? '🐟 Blobfish' : 'You'}</span>
+          <p>{msg.content}</p>
+        </div>
       {/each}
     </div>
-  {/if}
+  </div>
+{/if}
 
-  {#if activeCard}
-    <div 
-      style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: flex; align-items: center; justify-content: center;" 
-      onclick={closeCard}
-    >
-      <div 
-        style="background: white; padding: 20px; max-width: 400px; border-radius: 8px;" 
-        onclick={(e) => e.stopPropagation()}
-      >
-        <h3>{activeCard.title}</h3>
-        <p>{activeCard.description}</p>
-        <p>💡 {activeCard.hint}</p>
-        <div>
-          <button onclick={closeCard}>Back</button>
-          <button onclick={executeCard}>Execute</button>
-        </div>
-      </div>
-    </div>
-  {/if}
+<canvas bind:this={overlayCanvasRef} class="overlay-scene"></canvas>
+<canvas bind:this={canvasRef} class="scene" class:embedded on:pointerdown={onPointerDown} on:pointermove={onPointerMove} on:pointerup={onPointerUp} on:pointercancel={onPointerUp} on:click={onCanvasClick}></canvas>
+<canvas bind:this={uiCanvasRef} class="ui-scene" on:click={handleDiveToggle}></canvas>
 
-  {#if thoughtBubbleVisible}
-    <div style="position: absolute; z-index: 25; background: white; border-radius: 12px; padding: 15px; width: 260px; left: {fishScreenCoords.x + 130}px; top: {fishScreenCoords.y - 45}px;">
-      <div>
-        <p style="margin: 0 0 10px 0; color: #333;">{thoughtBubbleText}</p>
+<div class="center-actions">
 
-        {#if !isReplying && !isApiLoading}
-          <div>
-            <button onclick={openReplyInput}>Reply</button>
-          </div>
-        {:else}
-          <div style="display: flex; gap: 5px;">
-            <input
-              type="text"
-              placeholder="Send a ripple back..."
-              bind:value={replyInputValue}
-              onkeydown={handleReplyKey}
-              disabled={isApiLoading}
-              style="flex: 1;"
-              autofocus
-            />
-            <button onclick={sendReply} disabled={isApiLoading}>→</button>
-          </div>
-        {/if}
-      </div>
-    </div>
-  {/if}
-
-  <p style="position: absolute; bottom: 25px; color: white; opacity: 0.8; font-size: 0.9rem; pointer-events: none; z-index: 5;">{hintText}</p>
 </div>
+
+<div class="thought-wrap" class:visible={thoughtBubbleVisible || isReplying}>
+  <div class="thought-bubble">
+    <div class="thought-dots" style="display: {isApiLoading ? 'flex' : 'none'}">
+      <span></span><span></span><span></span>
+    </div>
+    <p class="thought-text" style="display: {isApiLoading ? 'none' : 'block'}">{thoughtBubbleText}</p>
+  </div>
+  
+  <div class="thought-reply">
+    <textarea
+      bind:this={replyInputRef}
+      bind:value={replyInputValue}
+      placeholder="Reply to the Blobfish…"
+      rows="1"
+      disabled={isApiLoading}
+      on:keydown={handleReplyKey}
+    ></textarea>
+    <button class="reply-send" on:click={sendReply} disabled={isApiLoading || !replyInputValue.trim()}>
+      {isApiLoading ? '…' : '➤'}
+    </button>
+  </div>
+</div>
+
+<p class="hint">{hintText}</p>
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
+
+  :global(body) {
+    margin: 0; padding: 0;
+    width: 100vw; height: 100vh;
+    background: #0B132B;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  canvas.scene, canvas.overlay-scene {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    display: block; touch-action: none;
+  }
+  
+  canvas.scene { z-index: 1; }
+  canvas.overlay-scene { z-index: 2; pointer-events: none; }
+  
+  canvas.scene.embedded { position: absolute; width: 100%; height: 100%; inset: 0; }
+
+  canvas.ui-scene {
+    position: fixed;
+    top: 70px; right: 16px;
+    width: 120px; height: 120px;
+    z-index: 10;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+
+  /* ── Top bar & History panel ────────────────────────────────────────── */
+  .top-bar {
+    position: fixed;
+    top: 16px; left: 16px;
+    display: flex; gap: 10px;
+    z-index: 30;
+  }
+  .bar-btn {
+    padding: 9px 16px;
+    border: none; border-radius: 20px;
+    background: rgba(255,255,255,0.92);
+    color: #2E3A47;
+    font-weight: 700; font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0,0,0,.15);
+    transition: background .15s, transform .1s;
+  }
+  .bar-btn:hover { background: #fff; transform: translateY(-1px); }
+  .bar-btn:active { transform: scale(.96); }
+
+  .history-panel {
+    position: fixed;
+    top: 62px; left: 16px;
+    width: min(360px, calc(100vw - 32px));
+    max-height: calc(100vh - 80px);
+    background: rgba(255,255,255,0.97);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    z-index: 25; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .history-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid rgba(74,144,226,.18);
+  }
+  .history-header h2 { margin: 0; font-size: 1rem; color: #2E3A47; }
+  .close-btn {
+    border: none; background: #e4eef8; color: #3A6699; border-radius: 50%;
+    width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem; font-weight: 700;
+  }
+  .history-scroll {
+    overflow-y: auto; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .history-msg { border-radius: 16px; padding: 12px 14px; font-size: 0.9rem; line-height: 1.55; }
+  .history-msg p { margin: 4px 0 0; color: #26313b; }
+  .history-msg.assistant { background: #eef4fb; }
+  .history-msg.user { background: #f7f4ef; }
+  .history-label { font-weight: 800; font-size: 0.78rem; color: #4A7BB0; }
+
+  /* ── Center Bottom Menu ────────────────────────────────────────────── */
+  .center-actions {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 20;
+  }
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 20px;
+    background: rgba(255,255,255,0.95);
+    border: none;
+    border-radius: 30px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #2E3A47;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    transition: transform 0.15s, background 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .action-btn:hover { background: #fff; transform: translateY(-3px); }
+  .action-btn:active { transform: translateY(1px); }
+  .btn-icon { font-size: 1.2rem; }
+
+  /* ── Thought bubble (Locked to Bottom Right) ───────────────────────── */
+  .thought-wrap {
+    position: fixed;
+    bottom: 90px;
+    right: 32px;
+    max-width: min(360px, 90vw);
+    display: flex; flex-direction: column; gap: 10px;
+    z-index: 15; pointer-events: none; opacity: 0;
+    transform: translateY(8px) scale(.96);
+    transition: opacity .35s ease, transform .35s ease;
+    align-items: flex-end;
+  }
+  .thought-wrap.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+  
+  .thought-bubble {
+    background: #fff;
+    border: 2px solid rgba(74,144,226,.40);
+    border-radius: 22px 22px 6px 22px; 
+    padding: 14px 18px;
+    box-shadow: 0 8px 36px rgba(0,0,0,.25);
+    position: relative; max-width: 100%;
+  }
+  .thought-dots { display: flex; gap: 4px; margin-bottom: 6px; }
+  .thought-dots span { width: 5px; height: 5px; background: #4A90E2; border-radius: 50%; }
+  .thought-text { margin: 0; font-size: 0.92rem; color: #26313b; line-height: 1.6; font-weight: 600; }
+  
+  .thought-reply { display: flex; gap: 8px; align-items: flex-end; width: 100%; }
+  .thought-reply textarea {
+    flex: 1; background: rgba(255,255,255,0.96);
+    border: 1.5px solid rgba(74,144,226,.50);
+    border-radius: 14px; padding: 10px 14px;
+    font-family: 'Nunito', sans-serif; font-size: 0.9rem; color: #26313b;
+    outline: none; resize: none;
+    height: 44px; min-height: 44px; max-height: 88px;
+    line-height: 1.5; box-sizing: border-box;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .thought-reply textarea::placeholder { color: #81a4c9; }
+  .thought-reply textarea:focus { border-color: #3B78C4; box-shadow: 0 0 0 3px rgba(59,120,196,.20); }
+  
+  .reply-send {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: none;
+    background: #4A90E2; color: #fff;
+    font-size: 1rem; cursor: pointer; flex-shrink: 0;
+    transition: background .12s, transform .1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .reply-send:hover:not(:disabled) { background: #3B78C4; }
+  .reply-send:active:not(:disabled) { transform: scale(.94); }
+  .reply-send:disabled { opacity: .5; cursor: default; }
+
+  /* ── Hints ───────────────────────────────────────────────────────── */
+  .hint {
+    position: fixed;
+    top: 22px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.85rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    letter-spacing: .04em;
+    z-index: 10;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+</style>
