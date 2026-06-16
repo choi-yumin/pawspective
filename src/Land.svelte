@@ -30,6 +30,8 @@
   const SLOTH_POS = { x: -20, y: 0, z: -120 }; 
   const SLOTH_SCALE = 1; 
 
+  const SIGN_POS = { x: 0, y: 170, z: 800 }; // Front edge of the island
+
   let { onSelectDove, onSelectBee, onSelectChicken, onSelectFish, onSelectSloth } = $props();
 
   // Reactive and lifecycle handles
@@ -403,6 +405,68 @@
       new Zdog.Shape({ addTo: head, stroke: 3.5, color: color.nose, closed: false, path: [ { x: -46, y: 20, z: 20 }, { bezier: [{ x: -42, y: 23, z: 20 }, { x: -36, y: 23, z: 20 }, { x: -30, y: 20, z: 20 }] } ] });
     }
     createSloth(slothTree);
+
+    // ── Chunky 3D Wooden Letter Signpost: "PAWSPECTIVE" ──
+    function createSignpost(parent, sx, sy, sz) {
+      const WoodLight = '#A3724C';
+      const WoodDark  = '#784E2F';
+      const TextColor = '#FFFFFF';
+
+      const signGroup = new Zdog.Anchor({ addTo: parent, translate: { x: sx, y: sy, z: sz }, rotate: { y: 0 } });
+
+      // Twin mounting support posts planted into the grass
+      new Zdog.Cylinder({ addTo: signGroup, diameter: 24, length: 180, color: WoodDark, frontFace: WoodLight, stroke: false, rotate: { x: TAU/4 }, translate: { x: -250, y: -90, z: 0 } });
+      new Zdog.Cylinder({ addTo: signGroup, diameter: 24, length: 180, color: WoodDark, frontFace: WoodLight, stroke: false, rotate: { x: TAU/4 }, translate: { x: 250, y: -90, z: 0 } });
+
+      // Main thick billboard backplate block
+      new Zdog.Box({
+        addTo: signGroup,
+        width: 760,
+        height: 110,
+        depth: 30,
+        color: WoodLight,
+        leftFace: WoodDark, rightFace: WoodDark, topFace: WoodDark, bottomFace: WoodDark,
+        translate: { y: -160, z: 10 }
+      });
+
+      // Character layout vector path dictionary definitions
+      const font = {
+        P: [{x:0,y:20},{x:0,y:-20},{x:12,y:-20},{x:15,y:-14},{x:15,y:-6},{x:12,y:0},{x:0,y:0}],
+        A: [{x:-14,y:20},{x:-3,y:-20},{x:3,y:-20},{x:14,y:20}, {move:{x:-8,y:4}},{x:8,y:4}],
+        W: [{x:-15,y:-20},{x:-8,y:20},{x:0,y:-4},{x:8,y:20},{x:15,y:-20}],
+        S: [{x:14,y:-14},{x:10,y:-20},{x:-10,y:-20},{x:-14,y:-12},{x:14,y:4},{x:10,y:20},{x:-10,y:20},{x:-14,y:12}],
+        E: [{x:14,y:-20},{x:0,y:-20},{x:0,y:20},{x:14,y:20}, {move:{x:0,y:0}},{x:11,y:0}],
+        C: [{x:14,y:-12},{x:10,y:-20},{x:-10,y:-20},{x:-14,y:0},{x:-10,y:20},{x:14,y:12}],
+        T: [{x:-14,y:-20},{x:14,y:-20}, {move:{x:0,y:-20}},{x:0,y:20}],
+        I: [{x:0,y:-20},{x:0,y:20}, {move:{x:-10,y:-20}},{x:10,y:-20}, {move:{x:-10,y:20}},{x:10,y:20}],
+        V: [{x:-14,y:-20},{x:0,y:20},{x:14,y:-20}]
+      };
+
+      const word = ["P","A","W","S","P","E","C","T","I","V","E"];
+      const spacing = 62; // Center offset multiplier step spacing per letter 
+      const startX = -((word.length - 1) * spacing) / 2;
+
+      word.forEach((char, index) => {
+        const letterAnchor = new Zdog.Anchor({
+          addTo: signGroup,
+          translate: { x: startX + (index * spacing), y: -160, z: 26 }
+        });
+
+        // 3D Text extrusion stack layers
+        for (let layer = 0; font[char] && layer < 4; layer++) {
+          new Zdog.Shape({
+            addTo: letterAnchor,
+            path: font[char],
+            closed: false,
+            stroke: layer === 3 ? 7 : 9,
+            color: layer === 3 ? TextColor : WoodDark,
+            translate: { z: -layer * 2.5 }, // Increased extrusion depth
+            backface: true                  // Ensure back is always rendered
+          });
+        }
+      });
+    }
+    createSignpost(land, SIGN_POS.x, SIGN_POS.y, SIGN_POS.z);
   }
 
   // Projection Screen Positions
@@ -468,7 +532,6 @@
       resize: 'window',
       zoom: START_ZOOM,
       rotate: { x: -0.1, y: TAU / 10 },
-      // rotate: { x: -TAU / 9, y: TAU / 10 },
     });
 
     buildScene(illo);
@@ -533,10 +596,6 @@
   });
 </script>
 
-<!-- <div class="hero-container">
-  <h1>Pawspective</h1>
-</div> -->
-
 <canvas
   bind:this={canvas}
   on:pointerdown={handlePointerDown}
@@ -546,23 +605,6 @@
 
 <style>
   :global(html, body) { height: 100%; margin: 0; overflow: hidden; }
-  .hero-container {
-    position: fixed;
-    top: 10%;
-    width: 100%;
-    text-align: center;
-    pointer-events: none;
-    z-index: 10;
-    font-family: 'Nunito', sans-serif;
-  }
-
-  h1 {
-    font-size: 5rem;
-    color: #4A7B28;
-    text-shadow: 2px 2px 0px rgba(255,255,255,0.8);
-    margin: 0;
-    letter-spacing: -2px;
-  }
   .land-canvas {
     position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
     background: #FFD9EC; cursor: grab; touch-action: none; display: block; border: none;
