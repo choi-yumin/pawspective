@@ -69,6 +69,7 @@
       new Zdog.Shape({ addTo: fGroup, stroke: 300, color: '#7CBF37', translate: { x: -40, y: -40, z: 15 } });
       new Zdog.Shape({ addTo: fGroup, stroke: 200, color: '#4A8516', translate: { x: 45,  y: 25,  z: -15 } });
     });
+    
     function createDaisy(parent, x, y, z, scale, stemLen, rotX, rotY, petalCol) {
       petalCol = petalCol || color.daisyWhite;
       const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (120 - stemLen), z }, scale });

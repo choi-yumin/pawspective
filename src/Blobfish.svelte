@@ -510,46 +510,6 @@
       fill: true
     });
 
-    // Left Island Enlarged Circle Foliage Clumps
-    // new Zdog.Shape({
-    //   addTo: sceneryZone,
-    //   stroke: 115,
-    //   color: color.landGreenDark,
-    //   translate: { x: -590, y: 0, z: 2 }
-    // });
-    // new Zdog.Shape({
-    //   addTo: sceneryZone,
-    //   stroke: 80,
-    //   color: color.landGreen,
-    //   translate: { x: -510, y: 0, z: 6 }
-    // });
-    // new Zdog.Shape({
-    //   addTo: sceneryZone,
-    //   stroke: 55,
-    //   color: color.landGreenDark,
-    //   translate: { x: -440, y: 0, z: 3 }
-    // });
-
-    // // Right Island Enlarged Circle Foliage Clumps
-    // new Zdog.Shape({
-    //   addTo: sceneryZone,
-    //   stroke: 135,
-    //   color: color.landGreenDark,
-    //   translate: { x: 470, y: 0, z: 2 }
-    // });
-    // new Zdog.Shape({
-    //   addTo: sceneryZone,
-    //   stroke: 90,
-    //   color: color.landGreen,
-    //   translate: { x: 560, y: 0, z: 6 }
-    // });
-    // new Zdog.Shape({
-    //   addTo: sceneryZone,
-    //   stroke: 65,
-    //   color: color.landGreenDark,
-    //   translate: { x: 640, y: 0, z: 3 }
-    // });
-
     // Layer 1.8: Water Volumes Group
     midBlock = new Zdog.Shape({
       addTo: backgroundZone,
@@ -590,18 +550,18 @@
       fill: true
     });
 
-    abyssBlock = new Zdog.Shape({
-      addTo: backgroundZone,
-      path: [
-        { x: -1200, y: 520 },
-        { arc: [ { x: 0, y: 580 }, { x: 1200, y: 520 } ] },
-        { x: 1200, y: 1200 },
-        { x: -1200, y: 1200 }
-      ],
-      stroke: 50,
-      color: color.bgTransBlue2,
-      fill: true
-    });
+      abyssBlock = new Zdog.Shape({
+        addTo: backgroundZone,
+        path: [
+          { x: -1200, y: 520 },
+          { arc: [ { x: 0, y: 580 }, { x: 1200, y: 520 } ] },
+          { x: 1200, y: 2500 }, // Increased from 1200 to 2500 to cover lower viewports
+          { x: -1200, y: 2500 } // Increased from 1200 to 2500
+        ],
+        stroke: 50,
+        color: color.bgTransBlue2,
+        fill: true
+      });
 
     // Layer 2: Fish Interactive Space Group
     fishZone = new Zdog.Anchor({ addTo: scene });
@@ -925,14 +885,64 @@
   }
 </script>
 
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
+  
+  /* Локальные стили для кнопок навигации */
+  .custom-top-bar {
+    position: absolute;
+    top: 16px; 
+    left: 16px;
+    display: flex; 
+    gap: 10px;
+    z-index: 50;
+  }
+
+  .custom-bar-btn {
+    padding: 9px 16px;
+    border: none; 
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #5A1A30;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700; 
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(90, 26, 48, 0.10);
+    transition: background 0.15s, transform 0.1s;
+  }
+  .custom-bar-btn:hover { 
+    background: #ffffff; 
+    transform: translateY(-1px); 
+  }
+  .custom-bar-btn:active { 
+    transform: scale(0.96); 
+  }
+</style>
+
 <div 
   bind:this={wrapperRef} 
-  style="position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; user-select: none; background-color: #ff8fae;"
+  style="position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; user-select: none; background-color: #ff8fae; font-family: 'Nunito', sans-serif;"
 >
+  <div class="custom-top-bar">
+    <button 
+      class="custom-bar-btn"
+      onclick={() => window.location.href = '/land'} 
+    >
+      ←
+    </button>
+
+    <button 
+      class="custom-bar-btn"
+      onclick={toggleHistory}
+    >
+      {historyOpen ? 'Close history' : '💬 History'}
+    </button>
+  </div>
   
   <button 
     style="position: absolute; top: 25px; right: 25px; background: none; border: none; padding: 0; cursor: pointer; z-index: 10; width: 150px; height: 150px;" 
-    on:click={handleDiveToggle} 
+    onclick={handleDiveToggle} 
     aria-label="Toggle Sea Depth"
   >
     <canvas bind:this={uiCanvasRef} width="150" height="150" style="display: block; width: 150px; height: 150px;"></canvas>
@@ -941,28 +951,20 @@
   <canvas 
     bind:this={canvasRef} 
     style="width: 100%; height: 100%; cursor: grab; touch-action: none; z-index: 1; {embedded ? 'position: absolute; inset: 0;' : ''}"
-    on:pointerdown={onPointerDown}
-    on:pointermove={onPointerMove}
-    on:pointerup={onPointerUp}
-    on:click={onCanvasClick}
+    onpointerdown={onPointerDown}
+    onpointermove={onPointerMove}
+    onpointerup={onPointerUp}
+    onclick={onCanvasClick}
   ></canvas>
   
   <canvas bind:this={overlayCanvasRef} style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;"></canvas>
-  
-  {#if !embedded}
-    <button style="position: absolute; bottom: 25px; left: 25px; width: 56px; height: 56px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.2); color: white; font-size: 1.5rem; cursor: pointer; z-index: 20;" on:click={toggleHistory} aria-label="Toggle Log History">
-      📜
-    </button>
-  {/if}
 
   {#if !embedded && radialMenuOpen}
-    <div 
-      style="position: absolute; z-index: 30; left: {clickCoords.x}px; top: {clickCoords.y}px;"
-    >
+    <div style="position: absolute; z-index: 30; left: {clickCoords.x}px; top: {clickCoords.y}px;">
       {#each interactionCards as card}
         <button 
           style="position: absolute; transform: rotate({card.angle}deg) translate(140px) rotate(-{card.angle}deg);"
-          on:click={() => openCard(card.id)}
+          onclick={() => openCard(card.id)}
         >
           <span>{card.icon}</span>
           <span>{card.label}</span>
@@ -972,48 +974,33 @@
   {/if}
 
   {#if activeCard}
-    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: flex; align-items: center; justify-content: center;" on:click={closeCard}>
-      <div style="background: white; padding: 20px; max-width: 400px; border-radius: 8px;" on:click|stopPropagation>
+    <div 
+      style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: flex; align-items: center; justify-content: center;" 
+      onclick={closeCard}
+    >
+      <div 
+        style="background: white; padding: 20px; max-width: 400px; border-radius: 8px;" 
+        onclick={(e) => e.stopPropagation()}
+      >
         <h3>{activeCard.title}</h3>
         <p>{activeCard.description}</p>
         <p>💡 {activeCard.hint}</p>
         <div>
-          <button on:click={closeCard}>Back</button>
-          <button on:click={executeCard}>Execute</button>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  {#if historyOpen}
-    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: flex; align-items: center; justify-content: center;">
-      <div style="background: white; padding: 20px; width: 80%; max-width: 600px; height: 70vh; display: flex; flex-direction: column; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3>Sub-surface Communication Logs</h3>
-          <button on:click={toggleHistory}>✕</button>
-        </div>
-        <div style="flex: 1; overflow-y: auto; margin-top: 20px;">
-          {#each chatHistory as log}
-            <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-              <strong>{log.role === 'assistant' ? '🐟 Fish' : '👤 You'}:</strong>
-              <p style="margin: 5px 0 0 0;">{log.content}</p>
-            </div>
-          {/each}
+          <button onclick={closeCard}>Back</button>
+          <button onclick={executeCard}>Execute</button>
         </div>
       </div>
     </div>
   {/if}
 
   {#if thoughtBubbleVisible}
-    <div
-      style={`position: absolute; z-index: 25; background: white; border-radius: 12px; padding: 15px; width: 260px; left:${fishScreenCoords.x + 130}px; top:${fishScreenCoords.y - 45}px;`}
-    >
+    <div style="position: absolute; z-index: 25; background: white; border-radius: 12px; padding: 15px; width: 260px; left: {fishScreenCoords.x + 130}px; top: {fishScreenCoords.y - 45}px;">
       <div>
         <p style="margin: 0 0 10px 0; color: #333;">{thoughtBubbleText}</p>
 
         {#if !isReplying && !isApiLoading}
           <div>
-            <button on:click={openReplyInput}>Reply</button>
+            <button onclick={openReplyInput}>Reply</button>
           </div>
         {:else}
           <div style="display: flex; gap: 5px;">
@@ -1021,12 +1008,12 @@
               type="text"
               placeholder="Send a ripple back..."
               bind:value={replyInputValue}
-              on:keydown={handleReplyKey}
+              onkeydown={handleReplyKey}
               disabled={isApiLoading}
               style="flex: 1;"
               autofocus
             />
-            <button on:click={sendReply} disabled={isApiLoading}>→</button>
+            <button onclick={sendReply} disabled={isApiLoading}>→</button>
           </div>
         {/if}
       </div>
