@@ -22,8 +22,15 @@
   const BEE_POS   = { x: -200, y: 20, z: -140 };
   const BEE_SCALE = 0.2;
 
+  const CHICKEN_POS   = { x: -300, y: 30, z: 200 }; // Placed on the grass
+  const CHICKEN_SCALE = 0.6;
+
+  const BLOB_POS = { x: 300, y: 150, z: -200 }; // Adjust these values to place it on the island
+  const BLOB_SCALE = 0.5;
+
   // navigation callback — call from a parent: <Island onSelectDove={() => view = 'dove'} />
-  let { onSelectDove, onSelectBee } = $props();
+  // Add onSelectFish here
+  let { onSelectDove, onSelectBee, onSelectChicken, onSelectFish } = $props();
 
   // reactive state (Svelte 5 runes)
   let canvas = $state(null);   // bound to the <canvas>
@@ -41,6 +48,8 @@
   let beeFrame = 0;          // drives the bee buzzing animation
   let downX = 0;             // pointer-down position (to tell click vs drag)
   let downY = 0;
+  let chickenHandle;         // { chicken, eyeL, eyeR } handle
+  let fish;
 
   const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -199,8 +208,6 @@
       new Zdog.Shape({ addTo: head, stroke: 3, color: B.black, translate: { x:  14, y: 4, z: 40 } });
       new Zdog.Shape({ addTo: head, stroke: 2, color: B.black, closed: false,
         path: [{ x: -4, y: 10, z: 42 }, { bezier: [{ x: -2, y: 13, z: 42 }, { x: 2, y: 13, z: 42 }, { x: 4, y: 10, z: 42 }] }] });
-      // new Zdog.Shape({ addTo: head, path: [{ x: -34, y: -14, z: 44 }, { x: -10, y: -22, z: 44 }], stroke: 8, color: B.black, translate: { x: -18, y: -8, z: 20 }, rotate: { z: -0.18 } });
-      // new Zdog.Shape({ addTo: head, path: [{ x: 10, y: -22, z: 44 }, { x: 34, y: -14, z: 44 }], stroke: 8, color: B.black, translate: { x: 18, y: -8, z: 20 }, rotate: { z: 0.18 } });
       new Zdog.Shape({ addTo: head, stroke: 3, color: B.cheek, translate: { x: -32, y: 14, z: 24 } });
       new Zdog.Shape({ addTo: head, stroke: 3, color: B.cheek, translate: { x:  24, y: 14, z: 30 } });
 
@@ -217,7 +224,7 @@
 
       // striped body
       const body = new Zdog.Anchor({ addTo: b, translate: { y: 32, z: -35 } });
-      const seg = new Zdog.Shape({ addTo: body, stroke: 35, color: B.yellow });
+      const seg = new Zdog.Shape({ addTo: body, stroke: 27, color: B.yellow });
       seg.copy({ addTo: body, stroke: 40.5, color: B.black,  translate: { z: -32 } });
       seg.copy({ addTo: body, stroke: 42, color: B.yellow, translate: { z: -64 } });
       seg.copy({ addTo: body, stroke: 39, color: B.black,  translate: { z: -96 } });
@@ -233,6 +240,154 @@
     }
 
     bee = createBee(r, BEE_POS.x, BEE_POS.y, BEE_POS.z, BEE_SCALE);
+
+    function createChicken(parent, x, y, z, scale = 1) {
+      const C = { body: '#FFF1E6', headBase: '#FFF5E8', eye: '#FFFFFF', pupil: '#111111', comb: '#FF3B5C', tail: '#F8D7C7', leg: '#FAA353' };
+      const chicken = new Zdog.Anchor({ addTo: parent, translate: { x, y, z }, scale, rotate: { x: -0.05 } });
+      const chickenBody = new Zdog.Anchor({ addTo: chicken });
+
+      // Body & Head
+      new Zdog.Shape({ addTo: chickenBody, stroke: 162, color: C.body, translate: { y: 75 } });
+      new Zdog.Cylinder({ addTo: chickenBody, diameter: 72, length: 150, stroke: 21.6, color: '#F6D8C8', rotate: { x: TAU / 4 }, translate: { y: -45, z: 18 } });
+
+      const head = new Zdog.Anchor({ addTo: chickenBody, translate: { y: -150, z: 42 } });
+      new Zdog.Shape({ addTo: head, stroke: 81, color: C.headBase });
+      new Zdog.Cone({ addTo: head, diameter: 42, length: 66, stroke: 7.2, color: '#F4A63A', translate: { y: 30, z: 72 } });
+
+      // Wattles & Comb
+      new Zdog.Shape({ addTo: head, path: [{ y: 0 }, { y: 48 }], stroke: 18, color: C.comb, translate: { x: -18, y: 42, z: 48 } }).copy({ translate: { x: 18, y: 42, z: 48 } });
+      new Zdog.Shape({ addTo: head, stroke: 21.6, color: C.comb, path: [{ x: -18, y: -66, z: 6 }, { x: -30, y: -108, z: 18 }, { x: -6, y: -84, z: 2 }, { x: 6, y: -126, z: -6 }, { x: 24, y: -78, z: -12 }] });
+
+      // Eyes
+      const eyeL = new Zdog.Anchor({ addTo: head, translate: { x: -60, y: -12, z: 42 } });
+      new Zdog.Shape({ addTo: eyeL, stroke: 50.4, color: C.eye, fill: true });
+      const pupilL = new Zdog.Shape({ addTo: eyeL, stroke: 18, color: C.pupil, fill: true, translate: { x: -12, y: -12, z: 36 } });
+
+      const eyeR = new Zdog.Anchor({ addTo: head, translate: { x: 60, y: -6, z: 36 } });
+      new Zdog.Shape({ addTo: eyeR, stroke: 43.2, color: C.eye, fill: true });
+      const pupilR = new Zdog.Shape({ addTo: eyeR, stroke: 16.2, color: C.pupil, fill: true, translate: { x: 9, y: 6, z: 30 } });
+
+      // Wings
+      const leftHand = new Zdog.Anchor({ addTo: chickenBody, translate: { x: -105, y: 30, z: 15 }, rotate: { y: 0.2, z: 0.3 } });
+      new Zdog.Shape({ addTo: leftHand, stroke: 19.2, color: C.body, closed: false, path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: -35, y: -30, z: -10 }, { x: -50, y: 20, z: -20 }, { x: -20, y: 55, z: -10 }] }] });
+      
+      const rightHand = new Zdog.Anchor({ addTo: chickenBody, translate: { x: 105, y: 30, z: 15 }, rotate: { y: -0.2, z: -0.3 } });
+      new Zdog.Shape({ addTo: rightHand, stroke: 19.2, color: C.body, closed: false, path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: 35, y: -30, z: -10 }, { x: 50, y: 20, z: -20 }, { x: 20, y: 55, z: -10 }] }] });
+
+
+      // Legs
+      // ── Legs and Toes ──────────────────────────────────────────
+    const legStroke = 16.2;
+    const legLeg = new Zdog.Shape({ path: [{ y: 60 }, { y: 120 }], stroke: legStroke, color: C.leg });
+    
+    // Helper to create a foot with 3 toes
+    function createFoot(parent, rotationY) {
+      const footAnchor = new Zdog.Anchor({ addTo: parent, translate: { y: 120 }, rotate: { y: rotationY } });
+      // Main foot pad
+      new Zdog.Shape({ addTo: footAnchor, path: [{ x: 0, z: 0 }, { x: 0, z: 45 }], stroke: legStroke, color: C.leg });
+      
+      // Toes
+      const toeAngles = [-0.8, 0, 0.8]; // Angles for the 3 toes
+      toeAngles.forEach(angle => {
+        new Zdog.Shape({ 
+          addTo: footAnchor, 
+          path: [{ x: 0, z: 0 }, { x: Math.sin(angle) * 36, z: Math.cos(angle) * 30 }], 
+          stroke: legStroke * 0.8, 
+          color: C.leg 
+        });
+      });
+    }
+    // Wings (3 feathers per side)
+      const createWing = (parent, xDir) => {
+        const wing = new Zdog.Anchor({ addTo: chickenBody, translate: { x: 105 * xDir, y: 30, z: 15 }, rotate: { y: 0.2 * xDir, z: 0.3 * xDir } });
+        for (let i = 0; i < 3; i++) {
+          new Zdog.Shape({ 
+            addTo: wing, 
+            stroke: 16 - (i * 2), 
+            color: C.body, 
+            closed: false, 
+            translate: { y: i * 10 },
+            path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: -35 * xDir, y: -30, z: -10 }, { x: -50 * xDir, y: 20, z: -20 }, { x: -20 * xDir, y: 55, z: -10 }] }] 
+          });
+        }
+      };
+      createWing(chickenBody, -1); // Left
+      createWing(chickenBody, 1);  // Right
+
+      // Tail (5-feather fan)
+      const tailBase = new Zdog.Anchor({ addTo: chickenBody, translate: { x: 0, y: 36, z: -75 } });
+      for (let i = 0; i < 5; i++) {
+        const angle = (i - 2) * 0.2; // Spreads them out horizontally
+        new Zdog.Shape({ 
+          addTo: tailBase, 
+          stroke: 18, 
+          color: C.tail, 
+          rotate: { y: angle },
+          path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: -30, y: -60, z: -10 }, { x: -50, y: -120, z: -40 }, { x: -20, y: -150, z: -50 }] }] 
+        });
+      }
+    const leftLegAnchor = new Zdog.Anchor({ addTo: chicken, translate: { x: -42, y: 150, z: 0 } });
+    legLeg.copy({ addTo: leftLegAnchor });
+    createFoot(leftLegAnchor, 0.3);
+
+    const rightLegAnchor = new Zdog.Anchor({ addTo: chicken, translate: { x: 42, y: 150, z: 0 } });
+    legLeg.copy({ addTo: rightLegAnchor });
+    createFoot(rightLegAnchor, -0.3);
+
+      return { chicken, eyeL, eyeR, head };
+    }
+    chickenHandle = createChicken(land, CHICKEN_POS.x, CHICKEN_POS.y, CHICKEN_POS.z, CHICKEN_SCALE);
+
+  function createBlobfish(parent, x, y, z) {
+    const C = { skin: '#F4B8C2', nose: '#F3AEBB', fin: '#C97A8D', mouth: '#6B3A45', tail: '#D88A9D' };
+    
+    // Use scale to adjust the object's physical size
+    const blob = new Zdog.Anchor({ addTo: parent, scale: 2 * BLOB_SCALE, translate: { x, y, z } });
+
+    // Apply BLOB_SCALE to all stroke properties
+    new Zdog.Shape({ addTo: blob, stroke: 260 * BLOB_SCALE, color: C.skin });
+    new Zdog.Shape({ addTo: blob, stroke: 180 * BLOB_SCALE, color: C.skin, translate: { y: -40, z: 6 } });
+    new Zdog.Shape({ addTo: blob, stroke: 100 * BLOB_SCALE, color: C.nose, translate: { y: 14, z: 62 } });
+    new Zdog.Shape({ addTo: blob, stroke: 120 * BLOB_SCALE, color: C.skin, translate: { x: -38, y: 24, z: 18 } });
+    new Zdog.Shape({ addTo: blob, stroke: 120 * BLOB_SCALE, color: C.skin, translate: { x: 38, y: 24, z: 18 } });
+
+    // Eyes
+    const eyeL = new Zdog.Anchor({ addTo: blob, translate: { x: -18, y: -14, z: 52 } });
+    new Zdog.Shape({ addTo: eyeL, stroke: 30 * BLOB_SCALE, color: '#FFFFFF' });
+    new Zdog.Shape({ addTo: eyeL, stroke: 12 * BLOB_SCALE, color: '#111111', translate: { z: 6 } });
+
+    const eyeR = new Zdog.Anchor({ addTo: blob, translate: { x: 18, y: -14, z: 52 } });
+    new Zdog.Shape({ addTo: eyeR, stroke: 30 * BLOB_SCALE, color: '#FFFFFF' });
+    new Zdog.Shape({ addTo: eyeR, stroke: 12 * BLOB_SCALE, color: '#111111', translate: { z: 6 } });
+
+    // Mouth
+    new Zdog.Shape({
+      addTo: blob,
+      stroke: 14 * BLOB_SCALE,
+      color: C.mouth,
+      closed: false,
+      path: [{ x: -28, y: 40, z: 44 }, { bezier: [{ x: -12, y: 28, z: 54 }, { x: 12, y: 28, z: 54 }, { x: 28, y: 40, z: 44 }] }]
+    });
+
+    // Fins
+    const finPath = [{ x: 0, y: 0 }, { x: -30, y: -10 }, { x: -50, y: 15 }, { x: -40, y: 35 }, { x: -10, y: 25 }];
+    const leftPec = new Zdog.Anchor({ addTo: blob, translate: { x: -52, y: 22, z: -8 } });
+    new Zdog.Shape({ addTo: leftPec, path: finPath, stroke: 24 * BLOB_SCALE, color: C.fin, fill: true });
+    
+    const rightPec = new Zdog.Anchor({ addTo: blob, translate: { x: 52, y: 22, z: -8 } });
+    new Zdog.Shape({ addTo: rightPec, path: finPath, scale: { x: -1 }, stroke: 24 * BLOB_SCALE, color: C.fin, fill: true });
+
+    // Tail
+    const blobTail = new Zdog.Anchor({ addTo: blob, translate: { y: 10, z: -68 } });
+    new Zdog.Shape({ addTo: blobTail, stroke: 52 * BLOB_SCALE, color: C.tail });
+    const tailFin = new Zdog.Anchor({ addTo: blobTail, translate: { z: -14 } });
+    new Zdog.Shape({ addTo: tailFin, stroke: 32 * BLOB_SCALE, color: C.fin, closed: false, path: [{ y: 0, z: 0 }, { bezier: [{ x: -6, y: -8, z: -4 }, { x: -12, y: -12, z: -8 }, { x: 0, y: -18, z: -14 }] }] });
+
+    return { blob, leftPec, rightPec, tailFin, eyeL, eyeR };
+  }
+    fish = createBlobfish(land, BLOB_POS.x, BLOB_POS.y, BLOB_POS.z);// Pass 'land' so it rotates with the island
+
+
   }
 
   // Where the dove's centre lands on screen, in CSS px.
@@ -259,6 +414,49 @@
       y: rect.height / 2 + illo.zoom * (v.y + illo.translate.y),
     };
   }
+
+  function chickenScreenPos() {
+  const v = new Zdog.Vector(CHICKEN_POS);
+  v.rotate(illo.rotate);
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: rect.width  / 2 + illo.zoom * (v.x + illo.translate.x),
+    y: rect.height / 2 + illo.zoom * (v.y + illo.translate.y),
+  };
+}
+
+function fishScreenPos() {
+
+  const src = fish ? fish.blob.translate : BLOB_POS;
+  const v = new Zdog.Vector(src);
+  v.rotate(illo.rotate);
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: rect.width  / 2 + illo.zoom * (v.x + illo.translate.x),
+    y: rect.height / 2 + illo.zoom * (v.y + illo.translate.y),
+  };
+}
+
+function isOnFish(e) {
+  if (!illo || !fish) return false;
+  const rect = canvas.getBoundingClientRect();
+  const p = fishScreenPos();
+  const dx = (e.clientX - rect.left) - p.x;
+  const dy = (e.clientY - rect.top)  - p.y;
+  // Hit radius based on blob scale
+  const hitRadius = 120 * BLOB_SCALE * illo.zoom; 
+  return Math.hypot(dx, dy) <= hitRadius;
+}
+
+function isOnChicken(e) {
+  if (!illo) return false;
+  const rect = canvas.getBoundingClientRect();
+  const p = chickenScreenPos();
+  const dx = (e.clientX - rect.left) - p.x;
+  const dy = (e.clientY - rect.top)  - p.y;
+  const hitRadius = 100 * CHICKEN_SCALE * illo.zoom;
+  return Math.hypot(dx, dy) <= hitRadius;
+}
 
   function isOnDove(e) {
     if (!illo) return false;
@@ -316,13 +514,15 @@
     if (moved < 6) {
       if (isOnDove(e))      onSelectDove?.();
       else if (isOnBee(e))  onSelectBee?.();
+      else if (isOnChicken(e)) onSelectChicken?.();
+      else if (isOnFish(e)) onSelectFish?.(); 
     }
   }
 
   // turn the cursor into a pointer when hovering the dove
   function handlePointerMove(e) {
     if (!canvas || canvas.style.cursor === 'grabbing') return;
-    canvas.style.cursor = (isOnDove(e) || isOnBee(e)) ? 'pointer' : 'grab';
+    canvas.style.cursor = (isOnDove(e) || isOnBee(e) || isOnChicken(e) || isOnFish(e)) ? 'pointer' : 'grab';
   }
 
   onMount(() => {
@@ -363,6 +563,29 @@
         bee.cont.translate.x   = BEE_POS.x + Math.cos(f / 28) * 2;
       }
 
+      if (chickenHandle) {
+        const blinkCycle = beeFrame % 340; 
+        const sY = (blinkCycle > 320) ? 0.5 + 0.5 * Math.cos(((blinkCycle - 320) / 20) * TAU) : 1;
+        chickenHandle.eyeL.scale.y = sY;
+        chickenHandle.eyeR.scale.y = sY;
+      }
+      // NEW: Blobfish Animation
+      if (fish) {
+        // Increment a frame counter for the fish if you don't want to reuse beeFrame
+        const f = beeFrame; 
+        fish.blob.translate.y = BLOB_POS.y + Math.sin(f * 0.035) * 14;
+        fish.blob.translate.x = BLOB_POS.x; // Keep it at your X coordinate
+        fish.blob.translate.z = BLOB_POS.z; // Keep it at your Z coordinate
+        fish.leftPec.rotate.z = Math.sin(f / 22) * 0.14;
+        fish.rightPec.rotate.z = -Math.sin(f / 22) * 0.14;
+        fish.tailFin.rotate.y = Math.sin(f * 0.07) * 0.18;
+        
+        const blink = f % 280;
+        let s_blink = (blink > 262) ? 0.5 + 0.5 * Math.cos(((blink - 262) / 18) * Math.PI * 2) : 1;
+        fish.eyeL.scale.y = s_blink;
+        fish.eyeR.scale.y = s_blink;
+      }
+
       const oldZoom = illo.zoom;
       const newZoom = lerp(oldZoom, targetZoom, ZOOM_EASE);
       if (Math.abs(newZoom - oldZoom) > 1e-5) {
@@ -378,6 +601,32 @@
     // wheel must be non-passive to allow preventDefault
     canvas.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('pointerup', handlePointerUp);
+
+    let frame = 0;
+
+function render() {
+  frame++;
+  
+  // Vertical bobbing and gentle rotation
+  fishZone.translate.y = Math.sin(frame * 0.035) * 14;
+  fishZone.rotate.z = Math.cos(frame * 0.025) * 0.04;
+
+  // Fin waving
+  blobFish.leftPec.rotate.z = Math.sin(frame / 22) * 0.14;
+  blobFish.rightPec.rotate.z = -Math.sin(frame / 22) * 0.14;
+
+  // Tail sway
+  blobFish.tailFin.rotate.y = Math.sin(frame * 0.07) * 0.18;
+
+  // Blinking
+  const blink = frame % 280;
+  let s_blink = (blink > 262) ? 0.5 + 0.5 * Math.cos(((blink - 262) / 18) * Math.PI * 2) : 1;
+  blobFish.eyeL.scale.y = s_blink;
+  blobFish.eyeR.scale.y = s_blink;
+
+  scene.updateRenderGraph();
+  requestAnimationFrame(render);
+}
   });
 
   onDestroy(() => {
