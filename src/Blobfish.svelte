@@ -9,19 +9,19 @@
   let overlayCanvasRef; 
   let wrapperRef; 
   
-  export let embedded = false;
+  let { embedded = false } = $props();
   
   // --- Environment & State Management ---
   let isDeep = false;
   let isAnimating = false;
-  let hintText = 'Click the fish for actions • Click the gauge to dive';
+  let hintText = 'Double click the fish to jump • Click the gauge to dive';
 
   let fishState = { pinkAlpha: 1, darkAlpha: 0 };
   let transitionProgress = { value: 0 }; 
 
   // --- Zdog Global Targets ---
   let scene, uiScene;
-  let fishZone; 
+  let backgroundZone, sceneryZone, fishZone; 
   let blobMasterAnchor, handsomeMasterAnchor;
   let leftPecContainer, rightPecContainer;
   let leftWingContainer, rightWingContainer;
@@ -30,15 +30,19 @@
   let mouth_pink, mouth_blue; 
   let gaugeNeedle;
 
+  // --- Vector Background Blobs ---
+  let skyBlock, midBlock, midTransitionBlock, deepTransitionBlock, abyssBlock;
+
+  // --- Drifting Scenery Anchors ---
+  let cloud1, cloud2, cloud3;
+
   let pinkFadeShapes = [];
   let darkFadeShapes = [];
+  let sceneryFadeShapes = [];
 
   // --- UI Positioning States ---
   let clickCoords = { x: 0, y: 0 }; 
-  let fishScreenCoords = { x: 0, y: 0 }; // Track screen coordinates of the fish for speech bubble anchor
-
-  // --- UI & OpenAI API Systems Integration ---
-  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+  let fishScreenCoords = { x: 0, y: 0 }; 
 
   let radialMenuOpen = false;
   let activeCard = null;
@@ -52,6 +56,10 @@
   let bubbleAutoHideTimer = null;
   let isApiLoading = false;
   let conversationActive = false;
+
+  // Gesture Tracking for Double Tap
+  let lastClickTime = 0;
+  let clickTimeout;
 
   const interactionCards = [
     {
@@ -86,13 +94,6 @@
   let chatHistory = [
     { role: 'assistant', content: "Mmmh... Hello down there. Let us talk about surviving the heavy pressures of life, or simply floating along." }
   ];
-
-  $: SYSTEM_TEXT = `You are a wise, slightly melancholic but highly perceptive Blobfish navigating the ocean. 
-Your tone is gentle, slow, warm, and rich with aquatic or pressure metaphors. Keep responses short (2-4 sentences max).
-Current Depth State: ${isDeep ? 'DEEP SEA RESIDENT (Blue)' : 'SURFACE / SHALLOW EXPELLED (Pink)'}.
-- When Pink/Shallow: You are soft, highly gelatinous, feeling slightly structurally out-of-place and vulnerable. You discuss dealing with unfair visual judgments, feeling deflated under atmospheric changes, and learning to float when things get exhausting.
-- When Blue/Deep: You are in your element—handsome, perfectly supported by the intense pressures around you, sleek and powerful. You discuss structural integrity, finding comfort in dark or heavy places, and thriving where others cannot breathe.
-Do not break character. Do not lecture. Remain whimsical, comforting, and deeply grounded.`;
 
   const thoughtPrompts = [
     'The pressure changes up here... they alter how everyone looks at you.',
@@ -132,7 +133,21 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
     blobPupilDeep: '#1d2a33',
     waterTransition: '#1C2541',
     seaweedDark: '26, 54, 39',   
-    seaweedLight: '53, 94, 59'   
+    seaweedLight: '53, 94, 59',
+    
+    // Multi-tier solid color ecosystem
+    bgSky: '#ff8fae',
+    bgPinkWater: '#FAD0C4',
+    bgMidWater: '#4A90E2',
+    bgTransBlue1: '#3B78C4', 
+    bgTransBlue2: '#2B5FA6',
+    bgDeepWater: '#1C2541',
+    bgAbyss: '#0B132B',
+
+    // Scenery color configurations
+    landGreen: '#6CA35E',
+    landGreenDark: '#4E8241',
+    cloudBody: 'rgba(255, 255, 255, 0.75)'
   };
 
   function toggleRadialMenu(clientX, clientY) {
@@ -194,7 +209,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
         thoughtBubbleVisible = false;
       }, 12000);
     }
-    console.log('showing bubble', thoughtBubbleVisible);
   }
 
   function openReplyInput() {
@@ -212,7 +226,6 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
       }
       scheduleThought();
     }, 18000 + Math.random() * 10000);
-    console.log('scheduled thought fired');
   }
 
   async function sendReply() {
@@ -241,7 +254,7 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
       const body = {
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: SYSTEM_TEXT },
+          { role: 'system', content: 'You are a wise blobfish' },
           ...chatHistory
         ],
         max_tokens: 256,
@@ -346,6 +359,7 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
   // --- Core Mechanical Helpers ---
   function hexToRgb(hex) {
+    if(hex.startsWith('rgba')) return { r:255, g:255, b:255 }; 
     return {
       r: parseInt(hex.slice(1, 3), 16),
       g: parseInt(hex.slice(3, 5), 16),
@@ -400,16 +414,25 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
     const fishRadiusThreshold = 145; 
     if (Math.hypot(cx, cy) < fishRadiusThreshold) {
-      // Centering interactive layout elements directly on fish screen projection coordinates
-      toggleRadialMenu(fishScreenCoords.x, fishScreenCoords.y);
+      const currentTime = Date.now();
+      
+      // Check for Double Click / Double Tap (interval < 300ms)
+      if (currentTime - lastClickTime < 300) {
+        clearTimeout(clickTimeout);
+        radialMenuOpen = false;
+        triggerJumpAnimation();
+      } else {
+        // Queue single click menu switch safely to rule out double tap intents
+        clearTimeout(clickTimeout);
+        clickTimeout = setTimeout(() => {
+          toggleRadialMenu(fishScreenCoords.x, fishScreenCoords.y);
+        }, 250);
+      }
+      lastClickTime = currentTime;
     }
   }
 
   onMount(() => {
-    wrapperRef.style.setProperty('--sky-pos', '45%');
-    wrapperRef.style.setProperty('--mid-pos', '75%');
-    wrapperRef.style.setProperty('--abyss-pos', '100%');
-
     const ctx = overlayCanvasRef.getContext('2d');
     function resizeOverlay() {
       overlayCanvasRef.width = window.innerWidth;
@@ -424,9 +447,163 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
       element: canvasRef,
       dragRotate: false,
       resize: 'window',
-      rotate: { x: -0.2, y: -0.12 },
+      rotate: { x: 0, y: -0.12 }, 
     });
 
+    // Layer 1: Background Sky Vector Objects Group
+    backgroundZone = new Zdog.Anchor({ addTo: scene, translate: { z: -450 } });
+
+    skyBlock = new Zdog.Shape({
+      addTo: backgroundZone,
+      path: [
+        { x: -1200, y: -900 },
+        { x: 1200, y: -900 },
+        { x: 1200, y: -260 },
+        { arc: [ { x: 0, y: -200 }, { x: -1200, y: -260 } ] }
+      ],
+      stroke: 40,
+      color: color.bgSky,
+      fill: true
+    });
+
+    // Layer 1.5: Clouds high up in the sky space
+    sceneryZone = new Zdog.Anchor({ addTo: scene, translate: { z: -420 } });
+
+    cloud1 = new Zdog.Anchor({ addTo: sceneryZone, translate: { x: -350, y: -450 } });
+    new Zdog.Shape({ addTo: cloud1, stroke: 50, color: color.cloudBody });
+    new Zdog.Shape({ addTo: cloud1, stroke: 36, color: color.cloudBody, translate: { x: -30, y: 8 } });
+    new Zdog.Shape({ addTo: cloud1, stroke: 40, color: color.cloudBody, translate: { x: 34, y: 4 } });
+
+    cloud2 = new Zdog.Anchor({ addTo: sceneryZone, translate: { x: 180, y: -520 } });
+    new Zdog.Shape({ addTo: cloud2, stroke: 64, color: color.cloudBody });
+    new Zdog.Shape({ addTo: cloud2, stroke: 46, color: color.cloudBody, translate: { x: -44, y: 10 } });
+    new Zdog.Shape({ addTo: cloud2, stroke: 42, color: color.cloudBody, translate: { x: 44, y: 6 } });
+
+    cloud3 = new Zdog.Anchor({ addTo: sceneryZone, translate: { x: 500, y: -380 } });
+    new Zdog.Shape({ addTo: cloud3, stroke: 38, color: color.cloudBody });
+    new Zdog.Shape({ addTo: cloud3, stroke: 28, color: color.cloudBody, translate: { x: -24, y: 4 } });
+
+    // Islands preserved right where they are
+    let leftIsland = new Zdog.Shape({
+      addTo: sceneryZone,
+      path: [
+        { x: -800, y: 20 },
+        { arc: [ { x: -500, y: -200 }, { x: -200, y: 20 } ] },
+        { x: -200, y: 20 },
+        { x: -800, y: 20 }
+      ],
+      stroke: 20,
+      color: color.landGreenDark,
+      fill: true
+    });
+
+    let rightIsland = new Zdog.Shape({
+      addTo: sceneryZone,
+      path: [
+        { x: 200, y: 20 },
+        { arc: [ { x: 500, y: -240 }, { x: 800, y: 20 } ] },
+        { x: 800, y: 20 },
+        { x: 200, y: 20 }
+      ],
+      stroke: 20,
+      color: color.landGreenDark,
+      fill: true
+    });
+
+    // Left Island Enlarged Circle Foliage Clumps
+    // new Zdog.Shape({
+    //   addTo: sceneryZone,
+    //   stroke: 115,
+    //   color: color.landGreenDark,
+    //   translate: { x: -590, y: 0, z: 2 }
+    // });
+    // new Zdog.Shape({
+    //   addTo: sceneryZone,
+    //   stroke: 80,
+    //   color: color.landGreen,
+    //   translate: { x: -510, y: 0, z: 6 }
+    // });
+    // new Zdog.Shape({
+    //   addTo: sceneryZone,
+    //   stroke: 55,
+    //   color: color.landGreenDark,
+    //   translate: { x: -440, y: 0, z: 3 }
+    // });
+
+    // // Right Island Enlarged Circle Foliage Clumps
+    // new Zdog.Shape({
+    //   addTo: sceneryZone,
+    //   stroke: 135,
+    //   color: color.landGreenDark,
+    //   translate: { x: 470, y: 0, z: 2 }
+    // });
+    // new Zdog.Shape({
+    //   addTo: sceneryZone,
+    //   stroke: 90,
+    //   color: color.landGreen,
+    //   translate: { x: 560, y: 0, z: 6 }
+    // });
+    // new Zdog.Shape({
+    //   addTo: sceneryZone,
+    //   stroke: 65,
+    //   color: color.landGreenDark,
+    //   translate: { x: 640, y: 0, z: 3 }
+    // });
+
+    // Layer 1.8: Water Volumes Group
+    midBlock = new Zdog.Shape({
+      addTo: backgroundZone,
+      path: [
+        { x: -1200, y: -280 },
+        { arc: [ { x: 0, y: -220 }, { x: 1200, y: -280 } ] },
+        { x: 1200, y: 50 },
+        { arc: [ { x: 0, y: 110 }, { x: -1200, y: 50 } ] }
+      ],
+      stroke: 50,
+      color: color.bgPinkWater,
+      fill: true
+    });
+
+    midTransitionBlock = new Zdog.Shape({
+      addTo: backgroundZone,
+      path: [
+        { x: -1200, y: 30 },
+        { arc: [ { x: 0, y: 90 }, { x: 1200, y: 30 } ] },
+        { x: 1200, y: 280 },
+        { arc: [ { x: 0, y: 340 }, { x: -1200, y: 280 } ] }
+      ],
+      stroke: 50,
+      color: color.bgMidWater,
+      fill: true
+    });
+
+    deepTransitionBlock = new Zdog.Shape({
+      addTo: backgroundZone,
+      path: [
+        { x: -1200, y: 260 },
+        { arc: [ { x: 0, y: 320 }, { x: 1200, y: 260 } ] },
+        { x: 1200, y: 540 },
+        { arc: [ { x: 0, y: 600 }, { x: -1200, y: 540 } ] }
+      ],
+      stroke: 50,
+      color: color.bgTransBlue1,
+      fill: true
+    });
+
+    abyssBlock = new Zdog.Shape({
+      addTo: backgroundZone,
+      path: [
+        { x: -1200, y: 520 },
+        { arc: [ { x: 0, y: 580 }, { x: 1200, y: 520 } ] },
+        { x: 1200, y: 1200 },
+        { x: -1200, y: 1200 }
+      ],
+      stroke: 50,
+      color: color.bgTransBlue2,
+      fill: true
+    });
+
+    // Layer 2: Fish Interactive Space Group
     fishZone = new Zdog.Anchor({ addTo: scene });
 
     // --- Blobfish (Surface - Pink) ---
@@ -506,6 +683,7 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
 
     pinkFadeShapes = setupFadeGroup(blobMasterAnchor);
     darkFadeShapes = setupFadeGroup(handsomeMasterAnchor);
+    sceneryFadeShapes = setupFadeGroup(sceneryZone);
 
     // FIXED UI GAUGE
     uiScene = new Zdog.Illustration({
@@ -616,6 +794,15 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
         fishZone.rotate.z = Math.cos(frame * 0.025) * 0.04;
       }
 
+      cloud1.translate.x += 0.28; if (cloud1.translate.x > 950) cloud1.translate.x = -950;
+      cloud2.translate.x += 0.16; if (cloud2.translate.x > 950) cloud2.translate.x = -950;
+      cloud3.translate.x += 0.22; if (cloud3.translate.x > 950) cloud3.translate.x = -950;
+
+      backgroundZone.rotate.y = -scene.rotate.y;
+      backgroundZone.rotate.x = -scene.rotate.x;
+      sceneryZone.rotate.y = -scene.rotate.y;
+      sceneryZone.rotate.x = -scene.rotate.x;
+
       updateBubblePosition();
 
       pinkFadeShapes.forEach(({ node, r, g, b }) => {
@@ -625,8 +812,17 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
         node.color = `rgba(${r},${g},${b},${fishState.darkAlpha})`;
       });
 
+      sceneryFadeShapes.forEach(({ node, r, g, b }) => {
+        node.color = `rgba(${r},${g},${b},${fishState.pinkAlpha})`;
+      });
+      
+      cloud1.children.forEach(c => c.color = `rgba(255,255,255,${0.75 * fishState.pinkAlpha})`);
+      cloud2.children.forEach(c => c.color = `rgba(255,255,255,${0.75 * fishState.pinkAlpha})`);
+      cloud3.children.forEach(c => c.color = `rgba(255,255,255,${0.75 * fishState.pinkAlpha})`);
+
       blobMasterAnchor.visible = fishState.pinkAlpha > 0.01;
       handsomeMasterAnchor.visible = fishState.darkAlpha > 0.01;
+      sceneryZone.visible = fishState.pinkAlpha > 0.01;
 
       leftPecContainer.rotate.z = Math.sin(frame / (22 / customFinSpeedFactor)) * 0.14;
       rightPecContainer.rotate.z = -Math.sin(frame / (22 / customFinSpeedFactor)) * 0.14;
@@ -674,17 +870,34 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
     const tl = gsap.timeline({
       onComplete: () => {
         isAnimating = false;
-        hintText = isDeep ? 'Click the gauge to surface' : 'Click the gauge to dive';
+        hintText = isDeep ? 'Click the gauge to surface' : 'Double click the fish to jump • Click the gauge to dive';
       }
     });
 
-    tl.to(wrapperRef, {
+    tl.to([skyBlock.translate, midBlock.translate, midTransitionBlock.translate, deepTransitionBlock.translate, abyssBlock.translate, sceneryZone.translate], {
       duration: 2.5,
-      '--sky-pos': isDeep ? '-120%' : '45%',
-      '--mid-pos': isDeep ? '-40%' : '75%',
-      '--abyss-pos': isDeep ? '0%' : '100%',
+      y: isDeep ? -850 : 0,
       ease: 'power2.inOut'
     }, 0);
+
+    tl.to({}, {
+      duration: 1.25,
+      onComplete: () => {
+        if (isDeep) {
+          skyBlock.color = color.bgTransBlue1;
+          midBlock.color = color.bgTransBlue2;
+          midTransitionBlock.color = color.bgDeepWater;
+          deepTransitionBlock.color = color.bgAbyss;
+          abyssBlock.color = '#040714'; 
+        } else {
+          skyBlock.color = color.bgSky;
+          midBlock.color = color.bgPinkWater;
+          midTransitionBlock.color = color.bgMidWater;
+          deepTransitionBlock.color = color.bgTransBlue1;
+          abyssBlock.color = color.bgTransBlue2;
+        }
+      }
+    }, 0.6);
 
     tl.to(gaugeNeedle.rotate, {
       duration: 2.5,
@@ -712,390 +925,113 @@ Do not break character. Do not lecture. Remain whimsical, comforting, and deeply
   }
 </script>
 
-<div bind:this={wrapperRef} class="scene-wrapper">
+<div 
+  bind:this={wrapperRef} 
+  style="position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; user-select: none; background-color: #ff8fae;"
+>
   
-  <button class="gauge-button" on:click={handleDiveToggle} aria-label="Toggle Sea Depth">
-    <canvas bind:this={uiCanvasRef} width="150" height="150" class="ui-canvas"></canvas>
+  <button 
+    style="position: absolute; top: 25px; right: 25px; background: none; border: none; padding: 0; cursor: pointer; z-index: 10; width: 150px; height: 150px;" 
+    on:click={handleDiveToggle} 
+    aria-label="Toggle Sea Depth"
+  >
+    <canvas bind:this={uiCanvasRef} width="150" height="150" style="display: block; width: 150px; height: 150px;"></canvas>
   </button>
 
   <canvas 
     bind:this={canvasRef} 
-    class="zdog-canvas"
-    class:embedded
+    style="width: 100%; height: 100%; cursor: grab; touch-action: none; z-index: 1; {embedded ? 'position: absolute; inset: 0;' : ''}"
     on:pointerdown={onPointerDown}
     on:pointermove={onPointerMove}
     on:pointerup={onPointerUp}
     on:click={onCanvasClick}
   ></canvas>
   
-  <canvas bind:this={overlayCanvasRef} class="overlay-canvas"></canvas>
+  <canvas bind:this={overlayCanvasRef} style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;"></canvas>
   
   {#if !embedded}
-    <button class="history-log-btn" on:click={toggleHistory} aria-label="Toggle Log History">
+    <button style="position: absolute; bottom: 25px; left: 25px; width: 56px; height: 56px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.2); color: white; font-size: 1.5rem; cursor: pointer; z-index: 20;" on:click={toggleHistory} aria-label="Toggle Log History">
       📜
     </button>
   {/if}
 
   {#if !embedded && radialMenuOpen}
     <div 
-      class="radial-menu-context" 
-      style="left: {clickCoords.x}px; top: {clickCoords.y}px;"
+      style="position: absolute; z-index: 30; left: {clickCoords.x}px; top: {clickCoords.y}px;"
     >
       {#each interactionCards as card}
         <button 
-          class="radial-item-node"
-          style="--angle: {card.angle}deg; --radius: 140px;"
+          style="position: absolute; transform: rotate({card.angle}deg) translate(140px) rotate(-{card.angle}deg);"
           on:click={() => openCard(card.id)}
         >
-          <span class="node-icon">{card.icon}</span>
-          <span class="node-label">{card.label}</span>
+          <span>{card.icon}</span>
+          <span>{card.label}</span>
         </button>
       {/each}
     </div>
   {/if}
 
   {#if activeCard}
-    <div class="modal-card-backdrop" on:click={closeCard}>
-      <div class="modal-card-body" on:click|stopPropagation>
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: flex; align-items: center; justify-content: center;" on:click={closeCard}>
+      <div style="background: white; padding: 20px; max-width: 400px; border-radius: 8px;" on:click|stopPropagation>
         <h3>{activeCard.title}</h3>
-        <p class="modal-desc">{activeCard.description}</p>
-        <p class="modal-hint">💡 {activeCard.hint}</p>
-        <div class="modal-action-row">
-          <button class="btn-cancel" on:click={closeCard}>Back</button>
-          <button class="btn-confirm" on:click={executeCard}>Execute</button>
+        <p>{activeCard.description}</p>
+        <p>💡 {activeCard.hint}</p>
+        <div>
+          <button on:click={closeCard}>Back</button>
+          <button on:click={executeCard}>Execute</button>
         </div>
       </div>
     </div>
   {/if}
 
   {#if historyOpen}
-    <div class="history-panel-overlay">
-      <div class="history-header">
-        <h3>Sub-surface Communication Logs</h3>
-        <button class="btn-close-log" on:click={toggleHistory}>✕</button>
-      </div>
-      <div class="history-scroll-box">
-        {#each chatHistory as log}
-          <div class="history-row {log.role}">
-            <span class="speaker-tag">{log.role === 'assistant' ? '🐟 Fish' : '👤 You'}:</span>
-            <p class="log-content-text">{log.content}</p>
-          </div>
-        {/each}
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: flex; align-items: center; justify-content: center;">
+      <div style="background: white; padding: 20px; width: 80%; max-width: 600px; height: 70vh; display: flex; flex-direction: column; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Sub-surface Communication Logs</h3>
+          <button on:click={toggleHistory}>✕</button>
+        </div>
+        <div style="flex: 1; overflow-y: auto; margin-top: 20px;">
+          {#each chatHistory as log}
+            <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+              <strong>{log.role === 'assistant' ? '🐟 Fish' : '👤 You'}:</strong>
+              <p style="margin: 5px 0 0 0;">{log.content}</p>
+            </div>
+          {/each}
+        </div>
       </div>
     </div>
   {/if}
 
-{#if thoughtBubbleVisible}
-  <div
-    class="thought-bubble-container direct-fish-chat"
-    style={`left:${fishScreenCoords.x + 130}px; top:${fishScreenCoords.y - 45}px;`}
-  >
-    <div class="bubble-tail"></div>
+  {#if thoughtBubbleVisible}
+    <div
+      style={`position: absolute; z-index: 25; background: white; border-radius: 12px; padding: 15px; width: 260px; left:${fishScreenCoords.x + 130}px; top:${fishScreenCoords.y - 45}px;`}
+    >
+      <div>
+        <p style="margin: 0 0 10px 0; color: #333;">{thoughtBubbleText}</p>
 
-    <div class="bubble-wrapper">
-      <p class="bubble-text">{thoughtBubbleText}</p>
-
-      {#if !isReplying && !isApiLoading}
-        <div class="initial-action-container">
-          <button class="btn-reveal-reply" on:click={openReplyInput}>Reply</button>
-        </div>
-      {:else}
-        <div class="chat-input-wrapper">
-          <input
-            type="text"
-            placeholder="Send a ripple back..."
-            bind:value={replyInputValue}
-            on:keydown={handleReplyKey}
-            disabled={isApiLoading}
-            autofocus
-          />
-          <button on:click={sendReply} disabled={isApiLoading}>→</button>
-        </div>
-      {/if}
+        {#if !isReplying && !isApiLoading}
+          <div>
+            <button on:click={openReplyInput}>Reply</button>
+          </div>
+        {:else}
+          <div style="display: flex; gap: 5px;">
+            <input
+              type="text"
+              placeholder="Send a ripple back..."
+              bind:value={replyInputValue}
+              on:keydown={handleReplyKey}
+              disabled={isApiLoading}
+              style="flex: 1;"
+              autofocus
+            />
+            <button on:click={sendReply} disabled={isApiLoading}>→</button>
+          </div>
+        {/if}
+      </div>
     </div>
-  </div>
-{/if}
+  {/if}
 
-  <p class="hint">{hintText}</p>
+  <p style="position: absolute; bottom: 25px; color: white; opacity: 0.8; font-size: 0.9rem; pointer-events: none; z-index: 5;">{hintText}</p>
 </div>
-
-<style>
-  :global(body) {
-    margin: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    user-select: none;
-  }
-
-  .scene-wrapper {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(
-      to bottom,
-      #ff8faee6 0%,
-      #FAD0C4 var(--sky-pos),
-      #4A90E2 var(--sky-pos),
-      #1C2541 var(--mid-pos),
-      #0B132B var(--abyss-pos)
-    );
-  }
-
-  .zdog-canvas {
-    width: 100%;
-    height: 100%;
-    cursor: grab;
-    touch-action: none;
-    z-index: 1;
-  }
-  .zdog-canvas:active { cursor: grabbing; }
-
-  .zdog-canvas.embedded {
-    position: absolute;
-    inset: 0;
-  }
-
-  .overlay-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; 
-    z-index: 2;
-  }
-  
-  .gauge-button {
-    position: absolute;
-    top: 25px;
-    right: 25px;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    z-index: 10; 
-    width: 150px;
-    height: 150px;
-    filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.35));
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-  .ui-canvas { display: block; width: 150px; height: 150px; }
-  .gauge-button:hover { transform: scale(1.05); }
-
-  .history-log-btn {
-    position: absolute;
-    bottom: 25px;
-    left: 25px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(12px);
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    z-index: 20;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.25);
-    transition: all 0.2s ease;
-  }
-  .history-log-btn:hover { background: rgba(255,255,255,0.35); transform: translateY(-2px); }
-
-  /* --- Bee-style Context Radial Overlay Alignment --- */
-  .radial-menu-context {
-    position: absolute;
-    transform: translate(0, 0);
-    z-index: 15;
-    pointer-events: none;
-  }
-
-  .radial-item-node {
-    position: absolute;
-    pointer-events: auto;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.3);
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(8px);
-    color: white;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    /* Clean trigonometric distribution around point coordinate origins */
-    transform: translate(-50%, -50%) translate(calc(cos(var(--angle)) * var(--radius)), calc(sin(var(--angle)) * var(--radius)));
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
-  }
-  .radial-item-node:hover { 
-    background: rgba(30, 41, 59, 0.95); 
-    transform: translate(-50%, -50%) translate(calc(cos(var(--angle)) * var(--radius)), calc(sin(var(--angle)) * var(--radius))) scale(1.1); 
-  }
-  .node-icon { font-size: 1.3rem; }
-  .node-label { font-size: 0.65rem; opacity: 0.8; margin-top: 1px; }
-
-  /* --- Modals & Backdrop Panels --- */
-  .modal-card-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 40;
-  }
-  .modal-card-body {
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(255,255,255,0.15);
-    backdrop-filter: blur(16px);
-    padding: 24px;
-    border-radius: 16px;
-    width: 320px;
-    color: white;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-  }
-  .modal-card-body h3 { margin-top: 0; font-size: 1.25rem; color: #F4B8C2; }
-  .modal-desc { font-size: 0.9rem; opacity: 0.9; line-height: 1.4; }
-  .modal-hint { font-size: 0.8rem; color: #94b3c7; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; }
-  .modal-action-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
-  .modal-action-row button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
-  .btn-cancel { background: rgba(255,255,255,0.1); color: white; }
-  .btn-confirm { background: #6C8EA4; color: white; }
-
-  .history-panel-overlay {
-    position: absolute;
-    top: 25px;
-    left: 25px;
-    bottom: 100px;
-    width: 340px;
-    background: rgba(11, 19, 43, 0.85);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px;
-    z-index: 30;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    color: white;
-  }
-  .history-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-  .history-header h3 { margin: 0; font-size: 1rem; color: #94b3c7; }
-  .btn-close-log { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; }
-  .history-scroll-box { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-  .history-row { display: flex; flex-direction: column; gap: 4px; padding: 8px; border-radius: 8px; font-size: 0.85rem; }
-  .history-row.user { background: rgba(255,255,255,0.06); align-self: flex-end; width: 85%; }
-  .history-row.assistant { background: rgba(108, 142, 164, 0.15); align-self: flex-start; width: 85%; }
-  .speaker-tag { font-weight: 700; font-size: 0.75rem; opacity: 0.5; }
-  .log-content-text { margin: 0; line-height: 1.35; }
-
-  /* --- Plain, Direct Messaging Box Style (No outline, pinned adjacent to fish tracking frame) --- */
-.thought-bubble-container.direct-fish-chat {
-  position: absolute;
-  z-index: 25;
-  pointer-events: auto;
-  transform: translateY(-50%);
-  transition: left 0.1s ease-out, top 0.1s ease-out;
-}
-
-.thought-bubble-container.direct-fish-chat .bubble-wrapper {
-  position: relative;
-  width: 280px;
-  min-height: 72px;
-  background: rgba(15, 23, 42, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  padding: 14px 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(10px);
-  color: white;
-}
-
-.thought-bubble-container.direct-fish-chat .bubble-tail {
-  position: absolute;
-  left: -10px;
-  top: 34px;
-  width: 16px;
-  height: 16px;
-  background: rgba(15, 23, 42, 0.86);
-  transform: rotate(45deg);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.thought-bubble-container.direct-fish-chat .bubble-text {
-  margin: 0 0 10px 0;
-  font-size: 1rem;
-  line-height: 1.45;
-  text-align: left;
-  font-weight: 500;
-  color: #fff;
-  text-shadow: none;
-  word-break: break-word;
-}
-
-.thought-bubble-container.direct-fish-chat .initial-action-container {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.thought-bubble-container.direct-fish-chat .btn-reveal-reply {
-  background: rgba(255, 255, 255, 0.14);
-  border: none;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.thought-bubble-container.direct-fish-chat .chat-input-wrapper {
-  display: flex;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 6px;
-  border-radius: 10px;
-}
-
-.thought-bubble-container.direct-fish-chat .chat-input-wrapper input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 0.9rem;
-  outline: none;
-  min-width: 0;
-}
-
-.thought-bubble-container.direct-fish-chat .chat-input-wrapper button {
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 8px;
-  background: #6C8EA4;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-  .hint {
-    position: absolute;
-    bottom: 30px;
-    color: white;
-    opacity: 0.6;
-    pointer-events: none;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-    z-index: 3;
-    text-align: center;
-  }
-</style>
