@@ -15,12 +15,12 @@
 
   const interactionCards = [
     {
-      id: 'smart',
-      icon: '🤓',
-      label: 'Smart Mode',
-      title: 'Switch on smart mode',
-      description: 'The chicken puts on its glasses and checks its phone, looking very important.',
-      hint: 'Tap again from this menu to switch it back off.'
+      id: 'chat',
+      icon: '💬',
+      label: 'Chat',
+      title: 'Answer a thought',
+      description: 'The chicken puts on its glasses, fixes its gaze, and thoughtfully responds to you.',
+      hint: 'A brilliant mind at work.'
     },
     {
       id: 'peck',
@@ -37,26 +37,10 @@
       title: 'Do a little strut',
       description: 'The chicken struts side to side and kicks up its feet, showing off a bit.',
       hint: 'Pure chicken swagger.'
-    },
-    {
-      id: 'wave',
-      icon: '👋',
-      label: 'Wave',
-      title: 'Wave hello',
-      description: 'The chicken lifts its wing and gives you a friendly wave.',
-      hint: 'Feel free to wave back.'
-    },
-    {
-      id: 'ruffle',
-      icon: '🪶',
-      label: 'Ruffle',
-      title: 'Ruffle its feathers',
-      description: 'Give the chicken a little startle and watch its feathers fluff right up.',
-      hint: 'Dragging the chicken quickly does this too.'
     }
   ];
 
-  let toggleSmartFn, peckFn, strutFn, waveFn, ruffleFn;
+  let chatFn, peckFn, strutFn;
 
   function goHome() { dispatch('back'); }
 
@@ -69,11 +53,9 @@
 
   function executeCard() {
     if (!activeCard) return;
-    if (activeCard.id === 'smart')  toggleSmartFn?.();
+    if (activeCard.id === 'chat')   chatFn?.();
     if (activeCard.id === 'peck')   peckFn?.();
     if (activeCard.id === 'strut')  strutFn?.();
-    if (activeCard.id === 'wave')   waveFn?.();
-    if (activeCard.id === 'ruffle') ruffleFn?.();
     activeCard = null;
   }
 
@@ -96,9 +78,8 @@
     };
 
     const scene = new Zdog.Illustration({ element: canvasRef, dragRotate: false, resize: 'window' });
-    // background is rendered in ChickenBackground.svelte
 
-    // ─── Flower clusters — pushed to either side, away from the chicken ─
+    // ─── Flower clusters ──────────────────────────────────────────────
     function createDaisy(parent, x, y, z, scale, stemLen, rotX, rotY, petalCol) {
       petalCol = petalCol || color.daisyWhite;
       const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (120 - stemLen), z }, scale });
@@ -159,16 +140,17 @@
       }
     }
 
-    // background elements are handled in ChickenBackground.svelte
-
     // ─── Chicken ──────────────────────────────────────────────────────
-    let chickenLeftEyeGroup, chickenRightEyeGroup, cEyeLeftPupil, cEyeRightPupil, glassesAnchor, rightHand, chickenFinger;
+    let chickenLeftEyeGroup, chickenRightEyeGroup, cEyeLeftPupil, cEyeRightPupil, glassesAnchor, rightHand, leftHand;
     const chicken = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 70, z: 0 }, rotate: { x: -0.05, y: 0, z: 0 } });
+    
+    // NEW: Isolate the upper body so the legs don't move during the peck animation
+    const chickenBody = new Zdog.Anchor({ addTo: chicken });
 
-    let bodyLower = new Zdog.Shape({ addTo: chicken, stroke: 270, color: color.body, translate: { y: 75 } });
-    new Zdog.Cylinder({ addTo: chicken, diameter: 72, length: 150, stroke: 36, color: '#F6D8C8', rotate: { x: TAU/4 }, translate: { y: -45, z: 18 } });
+    let bodyLower = new Zdog.Shape({ addTo: chickenBody, stroke: 270, color: color.body, translate: { y: 75 } });
+    new Zdog.Cylinder({ addTo: chickenBody, diameter: 72, length: 150, stroke: 36, color: '#F6D8C8', rotate: { x: TAU/4 }, translate: { y: -45, z: 18 } });
 
-    const head = new Zdog.Anchor({ addTo: chicken, translate: { y: -150, z: 42 } });
+    const head = new Zdog.Anchor({ addTo: chickenBody, translate: { y: -150, z: 42 } });
     new Zdog.Shape({ addTo: head, stroke: 135, color: color.headBase });
     new Zdog.Cone({ addTo: head, diameter: 42, length: 66, stroke: 12, color: '#F4A63A', translate: { y: 30, z: 72 } });
 
@@ -193,16 +175,30 @@
     glassesRight = glassesLeft.copy({ translate: { x: 54 }, visible: false });
     glassesBridge = new Zdog.Shape({ addTo: glassesAnchor, path: [{ x: -20, y: 0 }, { x: 20, y: 0 }], stroke: 13, color: '#1A1A1A', visible: false });
 
-    let leftHand = new Zdog.Anchor({ addTo: chicken, translate: { x: -84, y: 36, z: 24 }, rotate: { z: 0.4 } });
-    new Zdog.Shape({ addTo: leftHand, path: [{ x: -42, y: 30, z: -30 }, { x: -42, y: 45, z: -75 }], stroke: 90, color: '#FFF1E6' });
+    // Wings attached to chickenBody
+    leftHand = new Zdog.Anchor({ addTo: chickenBody, translate: { x: -105, y: 30, z: 15 }, rotate: { y: 0.2, z: 0.3 } });
+    new Zdog.Shape({
+      addTo: leftHand, stroke: 32, color: color.body, closed: false,
+      path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: -35, y: -30, z: -10 }, { x: -50, y: 20, z: -20 }, { x: -20, y: 55, z: -10 }] }]
+    });
+    new Zdog.Shape({
+      addTo: leftHand, stroke: 24, color: color.tail, closed: false,
+      path: [{ x: -5, y: 8, z: -3 }, { bezier: [{ x: -38, y: -20, z: -15 }, { x: -48, y: 25, z: -25 }, { x: -18, y: 48, z: -12 }] }]
+    });
 
-    rightHand = new Zdog.Anchor({ addTo: chicken, translate: { x: 84, y: 36, z: 24 }, rotate: { z: -0.4 } });
-    new Zdog.Shape({ addTo: rightHand, path: [{ x: 42, y: 30, z: -30 }, { x: 42, y: 45, z: -75 }], stroke: 90, color: '#FFF1E6' });
-    chickenFinger = new Zdog.Shape({ addTo: rightHand, path: [{ x: 42, y: 45, z: -75 }, { x: 42, y: -24, z: -96 }], stroke: 33, color: '#FFF1E6', scale: 0.001 });
+    rightHand = new Zdog.Anchor({ addTo: chickenBody, translate: { x: 105, y: 30, z: 15 }, rotate: { y: -0.2, z: -0.3 } });
+    new Zdog.Shape({
+      addTo: rightHand, stroke: 32, color: color.body, closed: false,
+      path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: 35, y: -30, z: -10 }, { x: 50, y: 20, z: -20 }, { x: 20, y: 55, z: -10 }] }]
+    });
+    new Zdog.Shape({
+      addTo: rightHand, stroke: 24, color: color.tail, closed: false,
+      path: [{ x: 5, y: 8, z: -3 }, { bezier: [{ x: 38, y: -20, z: -15 }, { x: 48, y: 25, z: -25 }, { x: 18, y: 48, z: -12 }] }]
+    });
 
-    // Tail feathers — capture each copy so they can all be ruffled
+    // Tail feathers attached to chickenBody
     const tailFeathers = [];
-    const tailAnchor = new Zdog.Anchor({ addTo: chicken, translate: { x: -54, y: 36, z: -75 } });
+    const tailAnchor = new Zdog.Anchor({ addTo: chickenBody, translate: { x: -54, y: 36, z: -75 } });
     new Zdog.Shape({ addTo: tailAnchor, stroke: 36, color: color.tail, closed: false, path: [{ x: 0, y: 0, z: 0 }, { bezier: [{ x: -66, y: -66, z: -18 }, { x: -96, y: -144, z: -72 }, { x: -48, y: -192, z: -96 }] }] });
     tailFeathers.push(tailAnchor);
     for (let i = 1; i < 8; i++) {
@@ -210,6 +206,7 @@
       tailFeathers.push(copy);
     }
 
+    // Legs explicitly stay attached to the base chicken
     const legLeg = new Zdog.Shape({ path: [{ y: 60 }, { y: 120 }], stroke: 27, color: color.leg });
     const leftLegAnchor = new Zdog.Anchor({ addTo: chicken, translate: { x: -42, y: 150, z: 0 } });
     legLeg.copy({ addTo: leftLegAnchor });
@@ -250,37 +247,73 @@
     }
     render();
 
-    // ─── Smart mode (glasses + phone) ────────────────────────────────
-    function toggleSmart() {
-      isSmartMode = !isSmartMode;
-      if (isSmartMode) {
-        glassesLeft.visible = true; glassesRight.visible = true; glassesBridge.visible = true;
-        gsap.to(glassesAnchor.scale, { duration: 0.8, x: 1, y: 1, z: 1, ease: 'elastic.out(1, 0.75)' });
-        gsap.to(cEyeLeftPupil.translate,  { duration: 0.4, x: 0, y: 0, ease: 'power2.out' });
-        gsap.to(cEyeRightPupil.translate, { duration: 0.4, x: 0, y: 0, ease: 'power2.out' });
-        gsap.to(rightHand.translate, { duration: 0.6, x: 65, y: -76, z: 64, ease: 'power2.out' });
-        gsap.to(rightHand.rotate,    { duration: 0.6, x: 0.5, y: -0.4, z: -1.9, ease: 'power2.out' });
-        gsap.to(chickenFinger.scale, { duration: 0.5, x: 1, y: 1, z: 1, ease: 'back.out(1.5)' });
-      } else {
-        gsap.to(glassesAnchor.scale, { duration: 0.4, x: 0.001, y: 0.001, z: 0.001, ease: 'power2.in' });
-        gsap.to(rightHand.translate, { duration: 0.4, x: 84, y: 36, z: 24, ease: 'power2.inOut' });
-        glassesLeft.visible = false; glassesRight.visible = false; glassesBridge.visible = false;
-        gsap.to(rightHand.rotate,    { duration: 0.4, x: 0, y: 0, z: -0.4, ease: 'power2.inOut' });
-        gsap.to(chickenFinger.scale, { duration: 0.4, x: 0.001, y: 0.001, z: 0.001, ease: 'power2.in' });
-      }
+    // ─── Chat interaction (wears glasses and eyes fixed) ───────────────
+    let isChatting = false;
+    function chat() {
+      if (isChatting) return;
+      isChatting = true;
+      isSmartMode = true;
+
+      glassesLeft.visible = true; glassesRight.visible = true; glassesBridge.visible = true;
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          gsap.to(glassesAnchor.scale, {
+            duration: 0.4, x: 0.001, y: 0.001, z: 0.001, ease: 'power2.in',
+            onComplete: () => {
+              glassesLeft.visible = false; glassesRight.visible = false; glassesBridge.visible = false;
+              isSmartMode = false;
+              isChatting = false;
+            }
+          });
+        }
+      });
+
+      // Rapidly centers eyes and pops up glasses
+      tl.to(glassesAnchor.scale, { duration: 0.6, x: 1, y: 1, z: 1, ease: 'elastic.out(1, 0.75)' })
+        .to(cEyeLeftPupil.translate,  { duration: 0.3, x: 0, y: 0, ease: 'power2.out' }, 0)
+        .to(cEyeRightPupil.translate, { duration: 0.3, x: 0, y: 0, ease: 'power2.out' }, 0);
+
+      // Conversational head bobs while answering thoughts
+      tl.to(head.translate, { duration: 0.25, y: -142, yoyo: true, repeat: 7, ease: 'sine.inOut' }, 0.5)
+        .to(leftHand.rotate, { duration: 0.25, z: 0.5, yoyo: true, repeat: 7, ease: 'sine.inOut' }, 0.5)
+        .to(rightHand.rotate, { duration: 0.25, z: -0.5, yoyo: true, repeat: 7, ease: 'sine.inOut' }, 0.5);
     }
 
-    // ─── Peck the ground ──────────────────────────────────────────────
+    // ─── Peck the ground (Deep Body Pivot) ─────────────────────────
     let isPecking = false;
     function peck() {
-      if (isPecking) return;
+      if (isPecking || !chickenBody) return;
       isPecking = true;
+      
       const tl = gsap.timeline({ onComplete: () => { isPecking = false; } });
+
       for (let i = 0; i < 3; i++) {
-        tl.to(head.translate, { duration: 0.12, y: -92, ease: 'power2.out' });
-        tl.to(head.rotate,    { duration: 0.12, x: 0.32, ease: 'power2.out' }, '<');
-        tl.to(head.translate, { duration: 0.16, y: -150, ease: 'power2.in' });
-        tl.to(head.rotate,    { duration: 0.16, x: 0, ease: 'power2.in' }, '<');
+        // 1. Pivot the upper body drastically downward and bend the neck
+        tl.to(chickenBody.rotate, { 
+          duration: 0.15, 
+          x: -1.2, // Deep forward tilt towards the ground
+          ease: 'power2.in' 
+        }, i * 0.35);
+
+        tl.to(head.rotate, {
+          duration: 0.15,
+          x: -0.6, // Bend the neck further down
+          ease: 'power2.in'
+        }, i * 0.35);
+        
+        // 2. Snap back to standing pose
+        tl.to(chickenBody.rotate, { 
+          duration: 0.2, 
+          x: 0, // Back to rest
+          ease: 'power2.out' 
+        }, i * 0.35 + 0.15);
+
+        tl.to(head.rotate, {
+          duration: 0.2,
+          x: 0, 
+          ease: 'power2.out'
+        }, i * 0.35 + 0.15);
       }
     }
 
@@ -306,53 +339,9 @@
       }
     }
 
-    // ─── Wave hello ─────────────────────────────────────────────────
-    let isWaving = false;
-    function wave() {
-      if (isWaving) return;
-      isWaving = true;
-      const tl = gsap.timeline({ onComplete: () => { isWaving = false; } });
-      tl.to(leftHand.rotate,    { duration: 0.3, z: -1.1, ease: 'back.out(1.4)' });
-      tl.to(leftHand.translate, { duration: 0.3, y: -30,  ease: 'back.out(1.4)' }, '<');
-      for (let i = 0; i < 3; i++) {
-        tl.to(leftHand.rotate, { duration: 0.18, z: -1.35, ease: 'sine.inOut' });
-        tl.to(leftHand.rotate, { duration: 0.18, z: -0.9,  ease: 'sine.inOut' });
-      }
-      tl.to(leftHand.rotate,    { duration: 0.3, z: 0.4, ease: 'power2.inOut' });
-      tl.to(leftHand.translate, { duration: 0.3, y: 36,  ease: 'power2.inOut' }, '<');
-    }
-
-    // ─── Ruffle feathers (startle) ─────────────────────────────────
-    let isRuffling = false;
-    function ruffle() {
-      if (isRuffling) return;
-      isRuffling = true;
-      const tl = gsap.timeline({
-        onComplete: () => {
-          isRuffling = false;
-          chicken.rotate.z = 0;
-          tailFeathers.forEach(f => { f.scale.x = 1; f.scale.y = 1; f.scale.z = 1; });
-          chickenLeftEyeGroup.scale.x = 1; chickenRightEyeGroup.scale.x = 1;
-        }
-      });
-      tl.to([chickenLeftEyeGroup.scale, chickenRightEyeGroup.scale], { duration: 0.1, x: 1.25, ease: 'power2.out' }, 0);
-      for (let i = 0; i < 5; i++) {
-        const d = i % 2 === 0 ? 1 : -1;
-        tl.to(chicken.rotate, { duration: 0.06, z: d * 0.045, ease: 'sine.inOut' });
-      }
-      tl.to(chicken.rotate, { duration: 0.08, z: 0, ease: 'sine.out' });
-      tailFeathers.forEach((f, idx) => {
-        tl.to(f.scale, { duration: 0.15, x: 1.2, y: 1.2, z: 1.2, ease: 'back.out(2)' }, idx * 0.02);
-        tl.to(f.scale, { duration: 0.3,  x: 1,   y: 1,   z: 1,   ease: 'power2.inOut' }, 0.35 + idx * 0.02);
-      });
-      tl.to([chickenLeftEyeGroup.scale, chickenRightEyeGroup.scale], { duration: 0.25, x: 1, ease: 'power2.inOut' }, 0.3);
-    }
-
-    toggleSmartFn = toggleSmart;
+    chatFn = chat;
     peckFn = peck;
     strutFn = strut;
-    waveFn = wave;
-    ruffleFn = ruffle;
 
     // ─── Pointer interactions ─────────────────────────────────────
     let isDragging = false, lastX = 0, lastY = 0, wasDragging = false;
@@ -367,9 +356,7 @@
       if (!isDragging) return;
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
-      const dist = Math.hypot(dx, dy);
-      if (dist > 8) wasDragging = true;
-      if (dist > 22) ruffle();
+      if (Math.hypot(dx, dy) > 8) wasDragging = true;
       chicken.rotate.y += dx * sensitivity;
       scene.updateRenderGraph();
     }
@@ -411,20 +398,17 @@
   });
 </script>
 
-<!-- ─── Top bar ──────────────────────────────────────────────────────── -->
 {#if !embedded}
   <div class="top-bar">
     <button class="bar-btn" on:click={goHome}>← Home</button>
   </div>
 {/if}
 
-<!-- ─── Canvas ─────────────────────────────────────────────────────── -->
 {#if !embedded}
   <ChickenBackground />
 {/if}
 <canvas bind:this={canvasRef} class="scene" class:embedded></canvas>
 
-<!-- ─── Radial menu ────────────────────────────────────────────────── -->
 {#if !embedded && radialMenuOpen}
   <div class="radial-overlay">
     {#each interactionCards as card, i}
@@ -448,7 +432,6 @@
   </div>
 {/if}
 
-<!-- ─── Interaction card ────────────────────────────────────────────── -->
 {#if activeCard}
   <div class="card-overlay" on:click|self={() => activeCard = null}>
     <div class="card">
@@ -464,7 +447,6 @@
   </div>
 {/if}
 
-<!-- ─── Hint ───────────────────────────────────────────────────────── -->
 <p class="hint">Tap the chicken to open interactions ✿</p>
 
 <style>
@@ -537,7 +519,7 @@
   .radial-btn:hover .radial-label { color: #fff; }
   @keyframes radialPop {
     from { transform: scale(0); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
+    to   { transform: scale(1);   opacity: 1; }
   }
   .radial-icon  { font-size: 1.6rem; line-height: 1; }
   .radial-label { font-size: 0.66rem; font-weight: 800; color: #7A2D44; letter-spacing: .02em; }
@@ -608,11 +590,5 @@
     pointer-events: none;
     letter-spacing: .04em;
     z-index: 10;
-  }
-
-  .credit {
-    position: fixed; bottom: 8px; left: 14px;
-    font-size: 0.7rem; color: rgba(90,26,48,.4);
-    z-index: 10; pointer-events: none;
   }
 </style>

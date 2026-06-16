@@ -1,13 +1,15 @@
 <script>
   //@ts-nocheck
-import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-import Zdog from 'zdog';
-import { gsap } from 'gsap';
-import BeeBackground from './BeeBackground.svelte';
+  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+  import Zdog from 'zdog';
+  import { gsap } from 'gsap';
+  import BeeBackground from './BeeBackground.svelte';
 
-export let embedded = false;
-let canvasRef;
-let pageBodyClass = 'bee-page';
+  const dispatch = createEventDispatcher();
+
+  export let embedded = false;
+  let canvasRef;
+  let pageBodyClass = 'bee-page';
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -33,31 +35,13 @@ let pageBodyClass = 'bee-page';
       angle: -90
     },
     {
-      id: 'fly',
-      icon: '🦋',
-      label: 'Fly',
-      title: 'Make it fly around',
-      description: 'Double-tap the bee\'s wings to send it looping through the garden.',
-      hint: 'Click the wing area twice quickly.',
-      angle: -30
-    },
-    {
-      id: 'anger',
-      icon: '🍯',
-      label: 'Honeycomb',
-      title: 'Touch the honeycomb',
-      description: 'Click the golden honeycomb hanging in the scene to trigger a buzzing rage.',
-      hint: 'The honeycomb is visible in the upper right of the scene.',
-      angle: 30
-    },
-    {
       id: 'pollen',
       icon: '🌸',
       label: 'Pollen',
       title: 'Gather pollen',
       description: 'Click any of the flowers scattered around the garden to send the bee collecting.',
       hint: 'Tap the flowers in the foreground.',
-      angle: 90
+      angle: 0
     },
     {
       id: 'chat',
@@ -66,7 +50,7 @@ let pageBodyClass = 'bee-page';
       title: 'Speak to the bee',
       description: 'The bee has thoughts and wisdom about effort, rest, and how others see you.',
       hint: 'Reply to the bee\'s thought bubbles below.',
-      angle: 150
+      angle: 90
     }
   ];
 
@@ -91,12 +75,8 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   ];
 
   let triggerAnnoyanceFn;
-  let flyAroundFn;
-  let triggerAngerFn;
   let gatherPollenFn;
   let talkingFn;
-  let wingTapCount = 0;
-  let wingTapTimer = null;
 
   function goHome() { dispatch('back'); }
 
@@ -115,9 +95,11 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   function executeCard() {
     if (!activeCard) return;
     if (activeCard.id === 'annoy') triggerAnnoyanceFn?.();
-    if (activeCard.id === 'fly') flyAroundFn?.();
-    if (activeCard.id === 'anger') triggerAngerFn?.();
-    if (activeCard.id === 'pollen') gatherPollenFn?.();
+    if (activeCard.id === 'pollen') {
+      // Pick a random flower zone when executed from the generic overlay action menu
+      const randomFlower = flowerZones[Math.floor(Math.random() * flowerZones.length)];
+      gatherPollenFn?.(randomFlower);
+    }
     if (activeCard.id === 'chat') {
       activeCard = null;
       return;
@@ -216,6 +198,18 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     }
   }
 
+  // Exact 3D target coordinates from your background layout grid.
+  // cx and cy map 2D click spaces relative to screen projection factors.
+  const flowerZones = [
+    { x: -600, y: 120, z: -150, cx: -570, cy: 150, r: 85 },
+    { x: -350, y: 140, z:   80, cx: -350, cy: 110, r: 90 },
+    { x: -120, y:  95, z: -280, cx: -100, cy: 160, r: 80 },
+    { x:  100, y: 135, z:   20, cx:  100, cy: 120, r: 90 },
+    { x:  320, y: 100, z: -320, cx:  340, cy: 170, r: 80 },
+    { x:  520, y: 145, z:   90, cx:  510, cy: 110, r: 90 },
+    { x:  700, y: 110, z: -180, cx:  680, cy: 150, r: 85 }
+  ];
+
   onMount(() => {
     if (!embedded) document.body.classList.add(pageBodyClass);
     if (!canvasRef) return;
@@ -255,13 +249,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       rotate: { x: -0.28, y: -0.12, z: 0 }
     });
 
-    // Bee + flowers sit in the left ~40 % of the viewport;
-    // the right side is free for the chat UI.
-    const SCENE_OFFSET_X = -180;
-
-    // background is rendered in BeeBackground.svelte
-
-    // ─── Bee ───────────────────────────────────────────────────────────
     const fgGroup = new Zdog.Anchor({ addTo: scene, translate: { x: 0, y: 50, z: 120 } });
 
     let BEE_CONT  = new Zdog.Anchor({ addTo: fgGroup, translate: { x: 0, y: -100, z: 0 }, scale: 1.55 });
@@ -315,7 +302,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     new Zdog.Ellipse({ addTo: rightWing, width: 80, height: 160, color: color.beeWhite, fill: true, rotate: { x: TAU/5, z:  TAU/5 }, translate: { x:  65 }, stroke: 0 });
     new Zdog.Ellipse({ addTo: leftWing,  width: 80, height: 160, color: color.beeWhite, fill: true, rotate: { x: TAU/5, z: -TAU/5 }, translate: { x: -65 }, stroke: 0 });
 
-    // ─── Expression system ────────────────────────────────────────────
     function setExpression(name) {
       if (name === 'neutral') {
         leftBrow.rotate.z  = -0.18; rightBrow.rotate.z = 0.18;
@@ -356,7 +342,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     }
     render();
 
-    // ─── Interaction animations ────────────────────────────────────────
     function triggerAnnoyance() {
       if (isAnnoyed) return;
       isAnnoyed = true; isShaking = true;
@@ -373,45 +358,35 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       askBee("Someone just pulled on my tail — I'm cross! Give me short playful bee wisdom about keeping cool.");
     }
 
-    function flyAround() {
-      if (isGathering) return;
-      isGathering = true;
-      setExpression('excited');
-      const tl = gsap.timeline({
-        onComplete: () => { setExpression('neutral'); isGathering = false; }
-      });
-      // Flying in full 3D with rotations to show side and back views
-      tl.to(BEE_CONT.translate, { duration: 0.4, x: -200, y: -150, z: 80, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.4, x: 0.3, y: -0.6, z: 0.5, ease: 'power2.inOut' }, 0);
-      
-      tl.to(BEE_CONT.translate, { duration: 0.35, x: 0, y: -220, z: 120, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.35, x: 0.25, y: -TAU/8, z: 0.3, ease: 'power2.inOut' }, '<');
-      
-      tl.to(BEE_CONT.translate, { duration: 0.35, x: 200, y: -150, z: 80, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.35, x: 0.3, y: 0.6, z: -0.5, ease: 'power2.inOut' }, '<');
-      
-      tl.to(BEE_CONT.translate, { duration: 0.35, x: 0, y: -80, z: 20, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.35, x: 0.35, y: TAU/6, z: 0.8, ease: 'power2.inOut' }, '<');
-      
-      tl.to(BEE_CONT.translate, { duration: 0.35, x: 0, y: -100, z: 0, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.5, x: 0, y: 0, z: 0, ease: 'power2.inOut' }, '<');
-    }
-
-    function gatherPollen() {
+    // Dynamic pollen gather routing based on target flower parameters
+    function gatherPollen(target) {
       if (isGathering) return;
       isGathering = true;
       setExpression('happy');
+
+      // Adjust relative hover positioning directly relative to flower location offsets
+      const targetX = target.x;
+      const targetY = target.y - 45;
+      const targetZ = target.z + 40;
+
       const tl = gsap.timeline({ onComplete: () => { setExpression('neutral'); isGathering = false; } });
-      tl.to(BEE_CONT.translate, { duration: 0.5, x: -60, y: 70, z: 5, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.2, x: 0.5, y: 0.4,      ease: 'power2.out'   }, '-=0.2');
-      tl.to(leftArm.rotate,     { duration: 0.2, z: 0.2, x: 0.1,      ease: 'back.out(1.5)'}, '-=0.1');
+      
+      tl.to(BEE_CONT.translate, { duration: 0.65, x: targetX, y: targetY, z: targetZ, ease: 'power2.inOut' });
+      tl.to(BEE_PIVOT.rotate,   { duration: 0.45, x: 0.35, y: targetX > 0 ? 0.25 : -0.25, ease: 'power2.out' }, '-=0.45');
+      tl.to(leftArm.rotate,     { duration: 0.2, z: 0.2, x: 0.1,      ease: 'back.out(1.5)'}, '-=0.15');
       tl.to(rightArm.rotate,    { duration: 0.2, z: -0.2, x: 0.1,     ease: 'back.out(1.5)'}, '<');
-      tl.to(BEE_CONT.translate, { duration: 0.12, y: 80,              ease: 'power1.inOut' });
-      tl.to(BEE_CONT.translate, { duration: 0.12, y: 65,              ease: 'power1.inOut' });
+      
+      // Gathering contact wiggles
+      tl.to(BEE_CONT.translate, { duration: 0.12, y: targetY + 12, ease: 'power1.inOut' });
+      tl.to(BEE_CONT.translate, { duration: 0.12, y: targetY - 4,  ease: 'power1.inOut' });
+      tl.to(BEE_CONT.translate, { duration: 0.12, y: targetY + 6,  ease: 'power1.inOut' });
+      
       tl.to(leftArm.rotate,     { duration: 0.2, z: 0, x: 0,          ease: 'power2.in' });
       tl.to(rightArm.rotate,    { duration: 0.2, z: 0, x: 0,          ease: 'power2.in' }, '<');
-      tl.to(BEE_CONT.translate, { duration: 0.55, x: 0, y: -100, z: 0, ease: 'power2.inOut' });
-      tl.to(BEE_PIVOT.rotate,   { duration: 0.4, x: 0, y: 0,          ease: 'power2.inOut' }, '-=0.4');
+      
+      // Return flight paths home
+      tl.to(BEE_CONT.translate, { duration: 0.6, x: 0, y: -100, z: 0, ease: 'power2.inOut' });
+      tl.to(BEE_PIVOT.rotate,   { duration: 0.45, x: 0, y: 0,          ease: 'power2.inOut' }, '-=0.45');
     }
 
     function talkingAnimation() {
@@ -430,21 +405,8 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     }
 
     triggerAnnoyanceFn = triggerAnnoyance;
-    flyAroundFn        = flyAround;
     gatherPollenFn     = gatherPollen;
     talkingFn          = talkingAnimation;
-    triggerAngerFn     = () => {
-      showThought('You touched my honeycomb! Bzzzz! 🍯');
-      triggerAnnoyance();
-    };
-
-    // ─── Input detection zones ────────────────────────────────────────
-    const honeycombZone  = { x: -310, y: -130, r: 80 };
-    const flowerZones = [
-      { x: -280, y: 120, r: 70 }, { x: -140, y: 130, r: 70 },
-      { x:   60, y: 140, r: 70 }, { x:  220, y: 125, r: 70 },
-      { x: -360, y: 150, r: 70 }, { x: -220, y: 145, r: 70 }
-    ];
 
     let isDragging = false, lastX = 0, lastY = 0, wasDragging = false;
     const sensitivity = 0.008;
@@ -475,27 +437,11 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       const cx     = (e.clientX - rect.left  - rect.width  / 2);
       const cy     = (e.clientY - rect.top   - rect.height / 2);
 
-      // Honeycomb click
-      if (Math.hypot(cx - honeycombZone.x, cy - honeycombZone.y) < honeycombZone.r) {
-        triggerAngerFn(); return;
-      }
-
-      // Flower clicks
+      // Flower projection click boundaries matching your back scene
       for (const fz of flowerZones) {
-        if (Math.hypot(cx - fz.x, cy - fz.y) < fz.r) {
-          gatherPollen(); return;
+        if (Math.hypot(cx - fz.cx, cy - fz.cy) < fz.r) {
+          gatherPollen(fz); return;
         }
-      }
-
-      // Wing double-tap
-      const wingLeft  = Math.hypot(cx - (-40), cy - (-130)) < 90;
-      const wingRight = Math.hypot(cx - ( 40), cy - (-130)) < 90;
-      if (wingLeft || wingRight) {
-        wingTapCount++;
-        if (wingTapTimer) clearTimeout(wingTapTimer);
-        if (wingTapCount >= 2) { wingTapCount = 0; flyAround(); }
-        else wingTapTimer = setTimeout(() => { wingTapCount = 0; }, 700);
-        return;
       }
 
       // Bee body click → radial menu
@@ -512,7 +458,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       window.addEventListener('pointerup',      onPointerUp);
     }
 
-    // First thought after 3 s
     setTimeout(() => showThought("Buzz! 🌸 I'm thinking about effort and rest. What about you?"), 3000);
     scheduleThought();
 
@@ -528,7 +473,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   });
 </script>
 
-<!-- ─── Top bar ──────────────────────────────────────────────────────── -->
 <div class="top-bar">
   <button class="bar-btn" on:click={goHome}>← Home</button>
   <button class="bar-btn" on:click={toggleHistory}>
@@ -536,7 +480,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   </button>
 </div>
 
-<!-- ─── Chat history panel ─────────────────────────────────────────── -->
 {#if historyOpen}
   <div class="history-panel">
     <div class="history-header">
@@ -554,13 +497,11 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
   </div>
 {/if}
 
-<!-- ─── Canvas ─────────────────────────────────────────────────────── -->
 {#if !embedded}
   <BeeBackground />
 {/if}
 <canvas bind:this={canvasRef} class="scene"></canvas>
 
-<!-- ─── Radial menu ────────────────────────────────────────────────── -->
 {#if !embedded && radialMenuOpen}
   <div class="radial-overlay">
     {#each interactionCards as card, i}
@@ -580,12 +521,10 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
         <span class="radial-label">{card.label}</span>
       </button>
     {/each}
-    <!-- Centre close -->
     <button class="radial-center" on:click={() => { radialMenuOpen = false; }}>✕</button>
   </div>
 {/if}
 
-<!-- ─── Interaction card ────────────────────────────────────────────── -->
 {#if activeCard}
   <div class="card-overlay" on:click|self={() => activeCard = null}>
     <div class="card">
@@ -599,17 +538,16 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       </div>
     </div>
   </div>
-  {/if}
+{/if}
 
-  <!-- ─── Thought bubble ─────────────────────────────────────────────── -->
-  {#if !embedded}
-    <div class="thought-wrap" class:visible={thoughtBubbleVisible}>
-  <div class="thought-bubble">
-    <div class="thought-dots">
-      <span></span><span></span><span></span>
+{#if !embedded}
+  <div class="thought-wrap" class:visible={thoughtBubbleVisible}>
+    <div class="thought-bubble">
+      <div class="thought-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="thought-text">{thoughtBubbleText}</p>
     </div>
-    <p class="thought-text">{thoughtBubbleText}</p>
-  </div>
     <div class="thought-reply">
       <textarea
         bind:value={replyInputValue}
@@ -623,12 +561,11 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
       </button>
     </div>
   </div>
-  {/if}
+{/if}
 
-  {#if !embedded}
-    <!-- ─── Hint ───────────────────────────────────────────────────────── -->
-    <p class="hint">Tap the bee to open interactions ✿</p>
-  {/if}
+{#if !embedded}
+  <p class="hint">Tap the bee to open interactions ✿</p>
+{/if}
 
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
@@ -641,12 +578,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     font-family: 'Nunito', sans-serif;
   }
 
-  .scene-root {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-
   canvas.scene {
     position: fixed; inset: 0;
     width: 100vw; height: 100vh;
@@ -654,17 +585,6 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     touch-action: none;
   }
 
-  .scene-root.embedded canvas.scene {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  .scene-root.embedded .background-scene {
-    display: none;
-  }
   /* ── Top bar ─────────────────────────────────────────────────────── */
   .top-bar {
     position: fixed;
@@ -857,59 +777,37 @@ You give gentle, insightful, slightly playful advice. You don't lecture. Keep it
     font-size: 0.92rem;
     color: #4B1528;
     line-height: 1.6;
-    font-weight: 600;
   }
 
   .thought-reply {
-    display: flex; gap: 8px; align-items: flex-end;
+    display: flex; gap: 6px;
+    background: #fff; padding: 6px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(240,74,111,.15);
+    box-shadow: 0 6px 20px rgba(90,26,48,.06);
   }
   .thought-reply textarea {
-    flex: 1;
-    background: rgba(255,255,255,0.96);
-    border: 1.5px solid rgba(240,74,111,.35);
-    border-radius: 14px;
-    padding: 10px 14px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.9rem;
-    color: #3D1020;
-    outline: none; resize: none;
-    height: 44px; min-height: 44px; max-height: 88px;
-    line-height: 1.5; box-sizing: border-box;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  .thought-reply textarea::placeholder { color: #c090a0; }
-  .thought-reply textarea:focus {
-    border-color: #F04A6F;
-    box-shadow: 0 0 0 3px rgba(240,74,111,.15);
+    flex: 1; border: none; resize: none;
+    font-family: 'Nunito', sans-serif; font-size: 0.88rem;
+    padding: 6px 10px; color: #3D1020; outline: none;
+    background: transparent;
   }
   .reply-send {
-    width: 44px; height: 44px;
-    border-radius: 50%; border: none;
-    background: #FF8FAE; color: #fff;
-    font-size: 1rem; cursor: pointer;
-    flex-shrink: 0;
-    transition: background .12s, transform .1s;
+    border: none; background: #FF8FAE; color: #fff;
+    border-radius: 50%; width: 32px; height: 32px;
+    cursor: pointer; font-size: 0.85rem;
     display: flex; align-items: center; justify-content: center;
+    transition: background .12s;
   }
   .reply-send:hover:not(:disabled) { background: #F04A6F; }
-  .reply-send:active:not(:disabled) { transform: scale(.94); }
-  .reply-send:disabled { opacity: .5; cursor: default; }
+  .reply-send:disabled { background: #f0c3d0; cursor: not-allowed; }
 
-  /* ── Hint ────────────────────────────────────────────────────────── */
   .hint {
-    position: fixed;
-    bottom: 22px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.8rem; font-weight: 600;
-    color: rgba(90, 26, 48, 0.55);
+    position: fixed; bottom: 20px; left: 24px;
+    margin: 0; font-size: 0.85rem; font-weight: 700;
+    color: #A05070; z-index: 10;
     pointer-events: none;
-    letter-spacing: .04em;
-    z-index: 10;
-  }
-
-  .credit {
-    position: fixed; bottom: 8px; left: 14px;
-    font-size: 0.7rem; color: rgba(90,26,48,.4);
-    z-index: 10; pointer-events: none;
+    background: rgba(255,255,255,0.4);
+    padding: 4px 12px; border-radius: 12px;
   }
 </style>
