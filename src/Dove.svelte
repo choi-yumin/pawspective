@@ -221,12 +221,10 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       white:    '#F4F2EE',
       mid:      '#E8E5DE',
       shade:    '#DAD6CE',
-      breast:   '#FBF9F5',
       beak:     '#D89A6E',
       beakDk:   '#C07E50',
       cheek:    '#F0A8A0',
       eye:      '#1A1410',
-      brow:     '#CFC9BE',
       oliveStem:'#6E8B3D',
       oliveLeaf:'#8AA653',
       olive:    '#46662C'
@@ -236,7 +234,7 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       element: canvasRef,
       dragRotate: false,
       resize: 'window',
-      rotate: { x: -0.05, y: 0.28, z: 0 }, // Subtle turn to appreciate symmetric 3D volume
+      rotate: { x: -0.05, y: 0.28, z: 0 },
       zoom: 1.3
     });
 
@@ -255,19 +253,12 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
 
     new Zdog.Shape({ 
       addTo: DOVE, 
-      stroke: 54, 
-      color: C.breast, 
-      translate: { x: -12, y: 18, z: 0 } 
-    });
-
-    new Zdog.Shape({ 
-      addTo: DOVE, 
       path: [{ x: -5, y: 15 }, { x: -35, y: -8 }], 
       stroke: 36, 
       color: C.white 
     });
 
-    // ─── 2. HEAD & FACE ────────────────────────────────────────────────
+    // ─── 2. HEAD & FACE (Eyebrow and lid shade entirely removed) ───────
     const head = new Zdog.Anchor({ addTo: DOVE, translate: { x: -35, y: -10, z: 0 } });
     new Zdog.Shape({ addTo: head, stroke: 35, color: C.white });
 
@@ -277,9 +268,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
     
     new Zdog.Shape({ addTo: head, stroke: 8, color: C.cheek, translate: { x: -1, y: 4, z: 15 } });
     new Zdog.Shape({ addTo: head, stroke: 8, color: C.cheek, translate: { x: -1, y: 4, z: -15 } });
-    
-    const brow = new Zdog.Shape({ addTo: head, path: [{ x: -12, y: -11 }, { x: -4, y: -12 }], stroke: 2.5, color: C.brow, translate: { z: 15.5 } });
-    const lid = new Zdog.Shape({ addTo: head, stroke: 7, color: C.white, translate: { x: -6, y: -11, z: 16 } });
 
     // ─── 3. GLUED ON SHARP BEAK ────────────────────────────────────────
     const beak = new Zdog.Anchor({ addTo: head, translate: { x: -14, y: 2, z: 0 } });
@@ -302,24 +290,21 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
     });
 
     // ─── 4. TWO VOLUMETRIC WINGS ───────────────────────────────────────
-    // Kept your elegant path geometry, but added stroke depth to make them plush volumes
     const elegantWingPath = [
       { x: -5, y: 0 },
       { bezier: [{ x: 10, y: -45 }, { x: 45, y: -50 }, { x: 65, y: -15 }] },
       { bezier: [{ x: 50, y: 5 }, { x: 20, y: 15 }, { x: -5, y: 0 }] }
     ];
 
-    // Left Wing (Front-facing side)
     const frontWing = new Zdog.Anchor({ addTo: DOVE, translate: { x: -12, y: 10, z: 24 } });
     new Zdog.Shape({ 
       addTo: frontWing, 
       path: elegantWingPath, 
-      stroke: 20, // Added substantial stroke thickness for deep volume
+      stroke: 20, 
       color: C.mid, 
       fill: true 
     });
     
-    // Right Wing (Back side - perfectly mirrored)
     const backWing = new Zdog.Anchor({ addTo: DOVE, translate: { x: -12, y: 10, z: -24 } });
     new Zdog.Shape({ 
       addTo: backWing, 
@@ -343,21 +328,19 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
     sprigParts.push(new Zdog.Shape({ addTo: sprig, stroke: 6, color: C.oliveLeaf, translate: { x: -15, y: 6 }, visible: false }));
 
     // ─── Expression system ───────────────────────────
-    let lidBase = -11;
     function setExpression(name) {
-      let lidy = -11, beakOpen = 0;
-      if (name === 'calm')         { lidy = -11; beakOpen = 0; }
-      else if (name === 'content') { lidy = -12; beakOpen = 0.15; }
-      else if (name === 'happy')   { lidy = -13; beakOpen = 0.3; }
-      else if (name === 'alarmed') { lidy = -14; beakOpen = 0.4; }
-      else if (name === 'curious') { lidy = -12; beakOpen = 0.08; }
-      lidBase = lidy; lid.translate.y = lidy;
+      let beakOpen = 0;
+      if (name === 'calm')         { beakOpen = 0; }
+      else if (name === 'content') { beakOpen = 0.15; }
+      else if (name === 'happy')   { beakOpen = 0.3; }
+      else if (name === 'alarmed') { beakOpen = 0.4; }
+      else if (name === 'curious') { beakOpen = 0.08; }
       lowerBeak.rotate.z = beakOpen;
     }
     setExpression('calm');
 
     // ─── Animation Loop ───────────────────────────────────────────────
-    let frame = 0, isRunning = true, isBusy = false, blinkTimer = 0, wingBeat = 0;
+    let frame = 0, isRunning = true, isBusy = false, wingBeat = 0;
     const flap = { amp: 0.06, speed: 1 };
 
     function render() {
@@ -366,22 +349,13 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
 
       wingBeat += 0.13 * flap.speed;
       frontWing.rotate.z = Math.sin(wingBeat) * flap.amp;
-      backWing.rotate.z  = Math.sin(wingBeat - 0.5) * flap.amp; // Both wings flap in counter-harmonics
+      backWing.rotate.z  = Math.sin(wingBeat - 0.5) * flap.amp;
 
       if (!isBusy) {
         DOVE_CONT.translate.y = Math.sin(frame / 40) * 4;
         head.rotate.z = Math.sin(frame / 46) * 0.05;
         tail.rotate.z = Math.sin(frame / 60) * 0.04;
       }
-
-      blinkTimer++;
-      let blink = 0;
-      if (blinkTimer > 200) {
-        const t = blinkTimer - 200;
-        if (t < 12) blink = Math.sin((t / 12) * Math.PI) * 8;
-        else blinkTimer = 0;
-      }
-      lid.translate.y = lidBase + blink;
 
       scene.updateRenderGraph();
       requestAnimationFrame(render);
@@ -745,7 +719,7 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   .radial-btn:hover .radial-label { color: #fff; }
   @keyframes radialPop {
     from { transform: scale(0); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
+    to   { transform: scale(1);   opacity: 1; }
   }
   .radial-icon  { font-size: 1.5rem; line-height: 1; }
   .radial-label { font-size: 0.65rem; font-weight: 800; color: #3A6699; letter-spacing: .02em; }
