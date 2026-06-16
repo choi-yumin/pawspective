@@ -24,6 +24,8 @@
   let targetZoom = START_ZOOM;
   let anchorX = 0;
   let anchorY = 0;
+  let dove;                  // { dove, frontWing, backWing } handle
+  let wingBeat = 0;          // drives the flap
 
   const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -112,6 +114,68 @@
     createCloud(r, -680, -360, -500, 1.25);
     createCloud(r, -180, -450, -960, 1.15);
     createCloud(r,  320, -360, -600, 1.10);
+
+    // ── Dove (shapes only; wings returned so tick() can flap them) ──
+    // Added to r so it rotates with the scene like the clouds.
+    // The counter-tilt on x presents it more head-on against the
+    // island's steep top-down camera (see note below the file).
+    function createDove(parent, x, y, z, scale = 1) {
+      const C = {
+        white:  '#ffffff',
+        mid:    '#f2f2f2',
+        shade:  '#DAD6CE',
+        beak:   '#D89A6E',
+        beakDk: '#C07E50',
+        cheek:  '#F0A8A0',
+        eye:    '#1A1410',
+      };
+
+      const d = new Zdog.Anchor({
+        addTo: parent,
+        translate: { x, y, z },
+        scale,
+      });
+
+      // body & neck
+      new Zdog.Shape({ addTo: d, path: [{ x: -10, y: 15 }, { x: 25, y: 10 }], stroke: 52, color: C.white });
+      new Zdog.Shape({ addTo: d, path: [{ x: -5, y: 15 }, { x: -35, y: -8 }], stroke: 36, color: C.white });
+
+      // head & face
+      const head = new Zdog.Anchor({ addTo: d, translate: { x: -35, y: -10, z: 0 } });
+      new Zdog.Shape({ addTo: head, stroke: 35, color: C.white });
+      new Zdog.Shape({ addTo: head, stroke: 6,   color: C.eye,   translate: { x: -6, y: -4, z: 15 } });
+      new Zdog.Shape({ addTo: head, stroke: 1.8, color: '#fff',  translate: { x: -7.5, y: -5, z: 16 } });
+      new Zdog.Shape({ addTo: head, stroke: 6,   color: C.eye,   translate: { x: -6, y: -4, z: -15 } });
+      new Zdog.Shape({ addTo: head, stroke: 8,   color: C.cheek, translate: { x: -1, y: 4, z: 15 } });
+      new Zdog.Shape({ addTo: head, stroke: 8,   color: C.cheek, translate: { x: -1, y: 4, z: -15 } });
+
+      // beak
+      const beak = new Zdog.Anchor({ addTo: head, translate: { x: -14, y: 2, z: 0 } });
+      new Zdog.Shape({ addTo: beak, path: [{ x: 0, y: -4 }, { x: -18, y: 0 }, { x: 0, y: 4 }], stroke: 2, color: C.beak, fill: true });
+      new Zdog.Shape({ addTo: beak, path: [{ x: 0, y: 0 }, { x: -14, y: 0 }, { x: 0, y: 2 }], stroke: 1.5, color: C.beakDk, fill: true, translate: { y: 2 } });
+
+      // wings on their own anchors so they can rotate
+      const wingPath = [
+        { x: -5, y: 0 },
+        { bezier: [{ x: 10, y: -45 }, { x: 45, y: -50 }, { x: 65, y: -15 }] },
+        { bezier: [{ x: 50, y: 5 }, { x: 20, y: 15 }, { x: -5, y: 0 }] },
+      ];
+      const frontWing = new Zdog.Anchor({ addTo: d, translate: { x: -12, y: 10, z: 24 } });
+      new Zdog.Shape({ addTo: frontWing, path: wingPath, stroke: 20, color: C.mid, fill: true });
+      const backWing = new Zdog.Anchor({ addTo: d, translate: { x: -12, y: 10, z: -24 } });
+      new Zdog.Shape({ addTo: backWing, path: wingPath, stroke: 20, color: C.mid, fill: true });
+
+      // tail fan
+      const tail = new Zdog.Anchor({ addTo: d, translate: { x: 22, y: 10 } });
+      new Zdog.Shape({ addTo: tail, path: [{ x: 0, y: 0 }, { x: 38, y: 4 }], stroke: 16, color: C.shade });
+      new Zdog.Shape({ addTo: tail, path: [{ x: 0, y: 0 }, { x: 32, y: 2 }], stroke: 12, color: C.mid,   translate: { z: 10 } });
+      new Zdog.Shape({ addTo: tail, path: [{ x: 0, y: 0 }, { x: 32, y: 2 }], stroke: 12, color: C.shade, translate: { z: -10 } });
+
+      return { dove: d, frontWing, backWing };
+    }
+
+    // gliding in the sky; scaled up to read against the big island
+    dove = createDove(r, -250, -320, -500, 1.35);
   }
 
   // Offset of the cursor from the canvas centre, in CSS px.
@@ -163,6 +227,13 @@
     function tick() {
       rafId = requestAnimationFrame(tick);
       if (spin) illo.rotate.y += SPIN_SPEED;
+
+      // gentle wing flap (no GSAP — same sin math as the original dove)
+      wingBeat += 0.13;
+      if (dove) {
+        dove.frontWing.rotate.z = Math.sin(wingBeat) * 0.18;
+        dove.backWing.rotate.z  = Math.sin(wingBeat - 0.5) * 0.18;
+      }
 
       const oldZoom = illo.zoom;
       const newZoom = lerp(oldZoom, targetZoom, ZOOM_EASE);
