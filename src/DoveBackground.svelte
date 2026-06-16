@@ -1,75 +1,100 @@
 <script>
-//@ts-nocheck
-  import { onMount } from 'svelte';
+  // @ts-nocheck
+  import { onMount, onDestroy } from 'svelte';
   import Zdog from 'zdog';
 
-  let canvasRef;
+  let canvas;
+  let illo;
+  let rafId;
+  let clouds = [];
+
+  function buildScene(illo) {
+    const CLOUD_PINK = '#FFE4F0';
+    const CLOUD_WHITE = '#FFF7FB';
+
+    // Define initial cloud positions, scales, and drift speeds
+    const cloudConfigs = [
+      { x: -600, y: -200, z: -200, s: 1.2, speed: 0.5 },
+      { x: 200, y: -100, z: -400, s: 0.9, speed: 0.3 },
+      { x: 600, y: 200, z: -600, s: 1.3, speed: 0.6 },
+      { x: -300, y: 300, z: -300, s: 1.1, speed: 0.4 },
+      { x: 0, y: 0, z: -800, s: 1.0, speed: 0.2 },
+    ];
+
+    cloudConfigs.forEach(config => {
+      const c = new Zdog.Anchor({ 
+        addTo: illo, 
+        translate: { x: config.x, y: config.y, z: config.z }, 
+        scale: config.s 
+      });
+      
+      new Zdog.Shape({ addTo: c, stroke: 110, color: CLOUD_WHITE });
+      new Zdog.Shape({ addTo: c, stroke: 76,  color: CLOUD_PINK,  translate: { x: -58, y: 12 } });
+      new Zdog.Shape({ addTo: c, stroke: 82,  color: CLOUD_WHITE, translate: { x: 56,  y: 6 } });
+      new Zdog.Shape({ addTo: c, stroke: 64,  color: CLOUD_PINK,  translate: { x: -98, y: 16 } });
+      new Zdog.Shape({ addTo: c, stroke: 58,  color: CLOUD_WHITE, translate: { x: 100, y: 12 } });
+      
+      // Save the anchor and its speed so we can animate it later
+      clouds.push({ anchor: c, speed: config.speed });
+    });
+  }
 
   onMount(() => {
-    const TAU = Zdog.TAU;
-    const C = {
-      skyTop:   '#BFD9EF',
-      skyLow:   '#E7F1FA',
-      sun:      '#FFF7E6',
-      cloud:    '#FFFFFF',
-      cloudDim: '#EAF2FA'
-    };
-
-    const scene = new Zdog.Illustration({
-      element: canvasRef,
-      dragRotate: false,
+    // Initialize the Zdog illustration
+    illo = new Zdog.Illustration({
+      element: canvas,
+      dragRotate: false, // Disabled to keep the camera completely static
       resize: 'window',
-      rotate: { x: -0.1, y: 0.18, z: 0 },
-      zoom: 1.0
+      zoom: 1,
     });
 
-    const envGroup = new Zdog.Anchor({ addTo: scene });
+    buildScene(illo);
 
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2200, y: -1200 }, { x: 2200, y: -1200 }, { x: 2200, y: 0 }, { x: -2200, y: 0 }],
-      stroke: 0, fill: true, color: C.skyTop, translate: { z: -860 }
-    });
-    new Zdog.Shape({
-      addTo: envGroup,
-      path: [{ x: -2200, y: 0 }, { x: 2200, y: 0 }, { x: 2200, y: 1000 }, { x: -2200, y: 1000 }],
-      stroke: 0, fill: true, color: C.skyLow, translate: { z: -860 }
-    });
-    new Zdog.Shape({ addTo: envGroup, stroke: 360, color: C.sun, translate: { x: 520, y: -260, z: -840 } });
+    // The animation loop
+    function tick() {
+      // Move each cloud to the right
+      clouds.forEach(cloud => {
+        cloud.anchor.translate.x += cloud.speed;
+        
+        // When a cloud moves entirely off the right side of the screen, 
+        // snap it back to the far left to create an infinite loop.
+        if (cloud.anchor.translate.x > 1200) {
+          cloud.anchor.translate.x = -1200;
+        }
+      });
 
-    [
-      { x: -460, y: -250, z: -560, s: 1.3 },
-      { x: -120, y: -320, z: -640, s: 0.9 },
-      { x:  380, y: -210, z: -520, s: 1.5 },
-      { x:  120, y: -300, z: -600, s: 1.0 },
-      { x:  760, y: -270, z: -640, s: 1.2 }
-    ].forEach(p => {
-      const c = new Zdog.Anchor({ addTo: envGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: c, stroke: 100, color: C.cloud });
-      new Zdog.Shape({ addTo: c, stroke: 76, color: C.cloudDim, translate: { x: -58, y: 12 } });
-      new Zdog.Shape({ addTo: c, stroke: 82, color: C.cloud,    translate: { x:  56, y:  6 } });
-      new Zdog.Shape({ addTo: c, stroke: 64, color: C.cloudDim, translate: { x: -98, y: 16 } });
-    });
+      illo.updateRenderGraph();
+      rafId = requestAnimationFrame(tick);
+    }
+    
+    tick(); // Start the loop
+  });
 
-    [{ x: -300, y: -360, z: -700 }, { x: -240, y: -340, z: -700 }, { x: 600, y: -380, z: -720 }].forEach(p => {
-      const b = new Zdog.Anchor({ addTo: envGroup, translate: p, scale: 0.5 });
-      new Zdog.Shape({ addTo: b, path: [{ x: -14, y: 6 }, { x: 0, y: 0 }, { x: 14, y: 6 }], stroke: 3, color: '#9FB4C6', closed: false });
-    });
-
-    scene.updateRenderGraph();
+  onDestroy(() => {
+    cancelAnimationFrame(rafId);
   });
 </script>
 
-<canvas bind:this={canvasRef} class="background-scene"></canvas>
+<canvas bind:this={canvas} class="sky-canvas"></canvas>
 
 <style>
-  canvas.background-scene {
+  :global(html, body) {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  .sky-canvas {
     position: fixed;
-    inset: 0;
+    left: 0;
+    top: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 0;
-    pointer-events: none;
+    background: #FFD9EC; /* Static pink background */
     display: block;
+    border: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
 </style>

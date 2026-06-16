@@ -192,8 +192,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        console.error('OpenAI Internal Error JSON:', errorData);
         throw new Error(`API returned status ${res.status}`);
       }
 
@@ -208,7 +206,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
         showThought("Coo… the wind carried my thought away. Ask me again?", true);
       }
     } catch (e) {
-      console.error('OpenAI Catch block triggered:', e);
       chatHistory = chatHistory.slice(0, -1);
       showThought("Coo… the wind carried my thought away. Ask me again?", true);
     } finally {
@@ -230,124 +227,150 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       cheek:    '#F0A8A0',
       eye:      '#1A1410',
       brow:     '#CFC9BE',
-      crest:    '#E2DED6',
-      foot:     '#D89A6E',
       oliveStem:'#6E8B3D',
       oliveLeaf:'#8AA653',
-      olive:    '#46662C',
-      skyTop:   '#BFD9EF',
-      skyLow:   '#E7F1FA',
-      sun:      '#FFF7E6',
-      cloud:    '#FFFFFF',
-      cloudDim: '#EAF2FA'
+      olive:    '#46662C'
     };
 
     const scene = new Zdog.Illustration({
       element: canvasRef,
       dragRotate: false,
       resize: 'window',
-      rotate: { x: -0.1, y: 0.18, z: 0 },
-      zoom: 1.0
+      rotate: { x: -0.05, y: 0.28, z: 0 }, // Subtle turn to appreciate symmetric 3D volume
+      zoom: 1.3
     });
-    // background is rendered in DoveBackground.svelte
 
     const fg = new Zdog.Anchor({ addTo: scene });
-    const DOVE_CONT = new Zdog.Anchor({ addTo: fg, translate: { x: 0, y: 0, z: 0 }, scale: 1.35 });
+    const DOVE_CONT = new Zdog.Anchor({ addTo: fg, scale: 1.35 });
     const PIVOT = new Zdog.Anchor({ addTo: DOVE_CONT });
     const DOVE  = new Zdog.Anchor({ addTo: PIVOT });
 
-    // Body — the dove's own form: a sleek flat ellipse + a rounded breast.
-    // (Deliberately NOT the bee's stacked-sphere torso.)
-    new Zdog.Ellipse({ addTo: DOVE, width: 138, height: 42, stroke: 18, color: C.white,  fill: true, translate: { y: 8 } });
-    new Zdog.Ellipse({ addTo: DOVE, width: 120, height: 30, stroke: 10, color: C.shade,  fill: true, translate: { y: 18, z: -4 } });
-    new Zdog.Ellipse({ addTo: DOVE, width: 48,  height: 46, stroke: 14, color: C.breast, fill: true, translate: { x: -58, y: 2, z: 6 } });
-    new Zdog.Ellipse({ addTo: DOVE, width: 26,  height: 30, stroke: 12, color: C.white,  fill: true, translate: { x: -74, y: -6, z: 2 } });
-
-    // Tucked feet
-    new Zdog.Shape({ addTo: DOVE, path: [{ x: -14, y: 26 }, { x: -14, y: 34 }], stroke: 3, color: C.foot });
-    new Zdog.Shape({ addTo: DOVE, path: [{ x: 2, y: 26 },  { x: 2, y: 34 }],  stroke: 3, color: C.foot });
-    [-14, 2].forEach(x => { for (let i = -1; i <= 1; i++) new Zdog.Shape({ addTo: DOVE, path: [{ x, y: 34 }, { x: x + i * 4, y: 38 }], stroke: 2, color: C.foot }); });
-
-    // Fanned tail
-    const tail = new Zdog.Anchor({ addTo: DOVE, translate: { x: 66, y: 12 } });
-    [-24, -14, -5, 5, 14, 24].forEach((a, i) => {
-      new Zdog.Shape({
-        addTo: tail,
-        path: [{ x: 0, y: 0 }, { bezier: [{ x: 25, y: a * 0.3 }, { x: 55, y: a * 0.65 }, { x: 78, y: a * 0.85 }] }],
-        stroke: (i === 0 || i === 5) ? 4 : 6, color: (i === 0 || i === 5) ? C.shade : C.mid
-      });
+    // ─── 1. SMOOTH INTEGRATED BODY & NECK ──────────────────────────────
+    new Zdog.Shape({ 
+      addTo: DOVE, 
+      path: [{ x: -10, y: 15 }, { x: 25, y: 10 }], 
+      stroke: 52, 
+      color: C.white 
     });
 
-    // Wings — layered bezier shapes on anchors so they can flap
-    const wingPath = [
-      { x: 0, y: 0 },
-      { bezier: [{ x: -30, y: -20 }, { x: -70, y: -70 }, { x: -50, y: -150 }] },
-      { bezier: [{ x: -20, y: -130 }, { x: 20, y: -110 }, { x: 60, y: -80 }] },
-      { bezier: [{ x: 90, y: -55 }, { x: 90, y: -20 }, { x: 60, y: -5 }] },
-      { bezier: [{ x: 40, y: 4 }, { x: 20, y: 4 }, { x: 0, y: 0 }] }
+    new Zdog.Shape({ 
+      addTo: DOVE, 
+      stroke: 54, 
+      color: C.breast, 
+      translate: { x: -12, y: 18, z: 0 } 
+    });
+
+    new Zdog.Shape({ 
+      addTo: DOVE, 
+      path: [{ x: -5, y: 15 }, { x: -35, y: -8 }], 
+      stroke: 36, 
+      color: C.white 
+    });
+
+    // ─── 2. HEAD & FACE ────────────────────────────────────────────────
+    const head = new Zdog.Anchor({ addTo: DOVE, translate: { x: -35, y: -10, z: 0 } });
+    new Zdog.Shape({ addTo: head, stroke: 35, color: C.white });
+
+    new Zdog.Shape({ addTo: head, stroke: 6, color: C.eye, translate: { x: -6, y: -4, z: 15 } });
+    new Zdog.Shape({ addTo: head, stroke: 1.8, color: '#fff', translate: { x: -7.5, y: -5, z: 16 } });
+    new Zdog.Shape({ addTo: head, stroke: 6, color: C.eye, translate: { x: -6, y: -4, z: -15 } });
+    
+    new Zdog.Shape({ addTo: head, stroke: 8, color: C.cheek, translate: { x: -1, y: 4, z: 15 } });
+    new Zdog.Shape({ addTo: head, stroke: 8, color: C.cheek, translate: { x: -1, y: 4, z: -15 } });
+    
+    const brow = new Zdog.Shape({ addTo: head, path: [{ x: -12, y: -11 }, { x: -4, y: -12 }], stroke: 2.5, color: C.brow, translate: { z: 15.5 } });
+    const lid = new Zdog.Shape({ addTo: head, stroke: 7, color: C.white, translate: { x: -6, y: -11, z: 16 } });
+
+    // ─── 3. GLUED ON SHARP BEAK ────────────────────────────────────────
+    const beak = new Zdog.Anchor({ addTo: head, translate: { x: -14, y: 2, z: 0 } });
+    
+    new Zdog.Shape({ 
+      addTo: beak, 
+      path: [{ x: 0, y: -4 }, { x: -18, y: 0 }, { x: 0, y: 4 }], 
+      stroke: 2, 
+      color: C.beak, 
+      fill: true 
+    });
+    
+    const lowerBeak = new Zdog.Anchor({ addTo: beak, translate: { x: 0, y: 2 } });
+    new Zdog.Shape({ 
+      addTo: lowerBeak, 
+      path: [{ x: 0, y: 0 }, { x: -14, y: 0 }, { x: 0, y: 2 }], 
+      stroke: 1.5, 
+      color: C.beakDk, 
+      fill: true 
+    });
+
+    // ─── 4. TWO VOLUMETRIC WINGS ───────────────────────────────────────
+    // Kept your elegant path geometry, but added stroke depth to make them plush volumes
+    const elegantWingPath = [
+      { x: -5, y: 0 },
+      { bezier: [{ x: 10, y: -45 }, { x: 45, y: -50 }, { x: 65, y: -15 }] },
+      { bezier: [{ x: 50, y: 5 }, { x: 20, y: 15 }, { x: -5, y: 0 }] }
     ];
-    const backWing = new Zdog.Anchor({ addTo: DOVE, translate: { x: 40, y: 8, z: -18 } });
-    new Zdog.Shape({ addTo: backWing, path: wingPath, stroke: 3, color: C.shade, fill: true });
-    const frontWing = new Zdog.Anchor({ addTo: DOVE, translate: { x: 40, y: 8, z: 18 } });
-    new Zdog.Shape({ addTo: frontWing, path: wingPath, stroke: 3, color: C.mid, fill: true });
 
-    // Head — turned three-quarters toward the camera for an expressive face
-    const head = new Zdog.Anchor({ addTo: DOVE, translate: { x: -82, y: -10 }, rotate: { y: -0.5 } });
-    new Zdog.Shape({ addTo: head, stroke: 34, color: C.white });
-    new Zdog.Ellipse({ addTo: head, diameter: 30, stroke: 8, color: C.shade, fill: true, translate: { z: -8 } });
-    [-0.3, 0, 0.3].forEach((r, i) => new Zdog.Shape({ addTo: head, path: [{ x: 0, y: -16 }, { x: i * 4, y: -26, z: 2 }], stroke: 3, color: C.crest, rotate: { z: r } }));
-    new Zdog.Shape({ addTo: head, stroke: 9, color: C.cheek, translate: { x: -3, y: 6, z: 13 } });
-    new Zdog.Shape({ addTo: head, stroke: 7, color: C.eye, translate: { x: -3, y: -3, z: 16 } });
-    new Zdog.Shape({ addTo: head, stroke: 2.5, color: '#fff', translate: { x: -4, y: -5, z: 18 } });
-    new Zdog.Shape({ addTo: head, stroke: 5, color: C.eye, translate: { x: 13, y: -3, z: 8 } });
-    const brow = new Zdog.Shape({ addTo: head, path: [{ x: -9, y: -10 }, { x: 3, y: -12 }], stroke: 3, color: C.brow, translate: { z: 15 } });
-    const lid = new Zdog.Shape({ addTo: head, stroke: 8, color: C.white, translate: { x: -3, y: -11, z: 19 } });
+    // Left Wing (Front-facing side)
+    const frontWing = new Zdog.Anchor({ addTo: DOVE, translate: { x: -12, y: 10, z: 24 } });
+    new Zdog.Shape({ 
+      addTo: frontWing, 
+      path: elegantWingPath, 
+      stroke: 20, // Added substantial stroke thickness for deep volume
+      color: C.mid, 
+      fill: true 
+    });
+    
+    // Right Wing (Back side - perfectly mirrored)
+    const backWing = new Zdog.Anchor({ addTo: DOVE, translate: { x: -12, y: 10, z: -24 } });
+    new Zdog.Shape({ 
+      addTo: backWing, 
+      path: elegantWingPath, 
+      stroke: 20, 
+      color: C.mid, 
+      fill: true 
+    });
 
-    // Openable beak: fixed upper + lower on a hinge
-    const beak = new Zdog.Anchor({ addTo: head, translate: { x: -14, y: 3, z: 11 } });
-    new Zdog.Shape({ addTo: beak, path: [{ x: 0, y: -3 }, { x: -22, y: 1 }, { x: 0, y: 3 }], stroke: 2, color: C.beak, fill: true });
-    const lowerBeak = new Zdog.Anchor({ addTo: beak, translate: { x: 0, y: 3 } });
-    new Zdog.Shape({ addTo: lowerBeak, path: [{ x: 0, y: 0 }, { x: -20, y: 0 }, { x: 0, y: 4 }], stroke: 2, color: C.beakDk, fill: true });
+    // ─── 5. TAIL FAN ───────────────────────────────────────────────────
+    const tail = new Zdog.Anchor({ addTo: DOVE, translate: { x: 22, y: 10 } });
+    new Zdog.Shape({ addTo: tail, path: [{ x: 0, y: 0 }, { x: 38, y: 4 }], stroke: 16, color: C.shade });
+    new Zdog.Shape({ addTo: tail, path: [{ x: 0, y: 0 }, { x: 32, y: 2 }], stroke: 12, color: C.mid, translate: { z: 10 } });
+    new Zdog.Shape({ addTo: tail, path: [{ x: 0, y: 0 }, { x: 32, y: 2 }], stroke: 12, color: C.shade, translate: { z: -10 } });
 
-    // Olive sprig — hidden until the Peace interaction
-    const sprig = new Zdog.Anchor({ addTo: beak, translate: { x: -24, y: 2, z: 0 } });
+    // ─── 6. OLIVE SPRIG (Hidden initially) ────────────────────────────
+    const sprig = new Zdog.Anchor({ addTo: beak, translate: { x: -10, y: 2, z: -1 } });
     const sprigParts = [];
-    sprigParts.push(new Zdog.Shape({ addTo: sprig, path: [{ x: 0, y: 0 }, { x: -22, y: -6 }], stroke: 2.5, color: C.oliveStem, visible: false }));
-    [[-6, -2, 0.6], [-13, -5, 0.3], [-20, -8, 0.5]].forEach(([x, y, r]) =>
-      sprigParts.push(new Zdog.Ellipse({ addTo: sprig, width: 10, height: 5, stroke: 2, color: C.oliveLeaf, fill: true, translate: { x, y }, rotate: { z: r }, visible: false })));
-    sprigParts.push(new Zdog.Shape({ addTo: sprig, stroke: 5, color: C.olive, translate: { x: -9, y: -1 }, visible: false }));
+    sprigParts.push(new Zdog.Shape({ addTo: sprig, path: [{ x: 0, y: 0 }, { x: -18, y: 6 }], stroke: 2.5, color: C.oliveStem, visible: false }));
+    sprigParts.push(new Zdog.Shape({ addTo: sprig, stroke: 6, color: C.oliveLeaf, translate: { x: -9, y: 3 }, visible: false }));
+    sprigParts.push(new Zdog.Shape({ addTo: sprig, stroke: 6, color: C.oliveLeaf, translate: { x: -15, y: 6 }, visible: false }));
 
-    // ─── Expression system (transforms only) ───────────────────────────
+    // ─── Expression system ───────────────────────────
     let lidBase = -11;
     function setExpression(name) {
-      let brz = 0, lidy = -11, beakOpen = 0;
-      if (name === 'calm')         { brz = 0;     lidy = -10; beakOpen = 0; }
-      else if (name === 'content') { brz = -0.05; lidy = -11; beakOpen = 0.12; }
-      else if (name === 'happy')   { brz = 0.12;  lidy = -13; beakOpen = 0.28; }
-      else if (name === 'alarmed') { brz = -0.22; lidy = -14; beakOpen = 0.38; }
-      else if (name === 'curious') { brz = 0.18;  lidy = -12; beakOpen = 0.06; }
-      brow.rotate.z = brz;
+      let lidy = -11, beakOpen = 0;
+      if (name === 'calm')         { lidy = -11; beakOpen = 0; }
+      else if (name === 'content') { lidy = -12; beakOpen = 0.15; }
+      else if (name === 'happy')   { lidy = -13; beakOpen = 0.3; }
+      else if (name === 'alarmed') { lidy = -14; beakOpen = 0.4; }
+      else if (name === 'curious') { lidy = -12; beakOpen = 0.08; }
       lidBase = lidy; lid.translate.y = lidy;
       lowerBeak.rotate.z = beakOpen;
     }
     setExpression('calm');
 
-    // ─── Idle + flutter + blink loop ───────────────────────────────────
+    // ─── Animation Loop ───────────────────────────────────────────────
     let frame = 0, isRunning = true, isBusy = false, blinkTimer = 0, wingBeat = 0;
-    const flap = { amp: 0.09, speed: 1 };
+    const flap = { amp: 0.06, speed: 1 };
 
     function render() {
       if (!isRunning) return;
       frame++;
 
-      // wings always flutter; flap state swells during startle / flight
       wingBeat += 0.13 * flap.speed;
       frontWing.rotate.z = Math.sin(wingBeat) * flap.amp;
-      backWing.rotate.z  = Math.sin(wingBeat - 0.5) * flap.amp;
+      backWing.rotate.z  = Math.sin(wingBeat - 0.5) * flap.amp; // Both wings flap in counter-harmonics
 
       if (!isBusy) {
-        DOVE_CONT.translate.y = Math.sin(frame / 40) * 4;   // gentle hover
-        head.rotate.z = Math.sin(frame / 46) * 0.05;        // soft head bob
+        DOVE_CONT.translate.y = Math.sin(frame / 40) * 4;
+        head.rotate.z = Math.sin(frame / 46) * 0.05;
         tail.rotate.z = Math.sin(frame / 60) * 0.04;
       }
 
@@ -370,11 +393,11 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       if (isBusy) return;
       isBusy = true;
       setExpression('alarmed');
-      gsap.to(flap, { duration: 0.1, amp: 0.5, speed: 3 });
+      gsap.to(flap, { duration: 0.1, amp: 0.4, speed: 3 });
       const tl = gsap.timeline({
         onComplete: () => {
           setExpression('calm');
-          gsap.to(flap, { duration: 0.7, amp: 0.09, speed: 1 });
+          gsap.to(flap, { duration: 0.7, amp: 0.06, speed: 1 });
           isBusy = false; DOVE_CONT.translate.y = 0; PIVOT.rotate.z = 0;
         }
       });
@@ -390,11 +413,11 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       if (isBusy) return;
       isBusy = true;
       setExpression('happy');
-      gsap.to(flap, { duration: 0.2, amp: 0.55, speed: 3 });
+      gsap.to(flap, { duration: 0.2, amp: 0.65, speed: 3 });
       const tl = gsap.timeline({
         onComplete: () => {
           setExpression('calm');
-          gsap.to(flap, { duration: 0.7, amp: 0.09, speed: 1 });
+          gsap.to(flap, { duration: 0.7, amp: 0.06, speed: 1 });
           isBusy = false;
           DOVE_CONT.translate.x = 0; DOVE_CONT.translate.y = 0; DOVE_CONT.translate.z = 0;
           PIVOT.rotate.z = 0; PIVOT.rotate.y = 0; PIVOT.rotate.x = 0;
@@ -415,7 +438,7 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       isBusy = true;
       setExpression('content');
       const tl = gsap.timeline({ onComplete: () => { setExpression('calm'); isBusy = false; head.rotate.z = 0; } });
-      tl.to(DOVE.scale, { duration: 0.3, x: 1.05, y: 1.05, ease: 'sine.inOut' });   // chest puff
+      tl.to(DOVE.scale, { duration: 0.3, x: 1.05, y: 1.05, ease: 'sine.inOut' });
       for (let i = 0; i < 3; i++) {
         tl.add(() => setExpression('happy'));
         tl.to(head.rotate, { duration: 0.22, z: 0.12, ease: 'sine.inOut' });
@@ -434,7 +457,7 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       const tl = gsap.timeline({
         onComplete: () => { sprigParts.forEach(p => p.visible = false); setExpression('calm'); isBusy = false; head.rotate.x = 0; PIVOT.rotate.z = 0; }
       });
-      tl.to(head.rotate,  { duration: 0.7, x: 0.32, ease: 'power2.out' });   // bow
+      tl.to(head.rotate,  { duration: 0.7, x: 0.32, ease: 'power2.out' });
       tl.to(PIVOT.rotate, { duration: 0.7, z: 0.06, ease: 'power2.out' }, '<');
       tl.to({}, { duration: 1.3 });
       tl.to(head.rotate,  { duration: 0.8, x: 0, ease: 'power1.inOut' });
@@ -461,7 +484,7 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
     peaceFn    = peace;
     talkingFn  = talkingAnimation;
 
-    // ─── Pointer: drag to ruffle / tug to startle ──────────────────────
+    // ─── Pointer Interaction ──────────────────────────────────────────
     let isDragging = false, lastX = 0, lastY = 0, wasDragging = false, dragDist = 0;
     const sensitivity = 0.006;
 
@@ -492,7 +515,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
       const rect = canvasRef.getBoundingClientRect();
       const cx = (e.clientX - rect.left - rect.width  / 2);
       const cy = (e.clientY - rect.top  - rect.height / 2);
-      // the dove is wide and flat — a generous box opens the menu
       if (Math.abs(cx) < 190 && Math.abs(cy) < 150) {
         radialMenuOpen = !radialMenuOpen;
         activeCard = null;
@@ -525,7 +547,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   });
 </script>
 
-<!-- ─── Top bar ──────────────────────────────────────────────────────── -->
 {#if !embedded}
   <div class="top-bar">
     <button class="bar-btn" on:click={goHome}>← Home</button>
@@ -535,7 +556,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   </div>
 {/if}
 
-<!-- ─── Chat history panel ─────────────────────────────────────────── -->
 {#if !embedded && historyOpen}
   <div class="history-panel">
     <div class="history-header">
@@ -553,13 +573,11 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   </div>
 {/if}
 
-<!-- ─── Canvas ─────────────────────────────────────────────────────── -->
 {#if !embedded}
   <DoveBackground />
 {/if}
 <canvas bind:this={canvasRef} class="scene" class:embedded></canvas>
 
-<!-- ─── Radial menu ────────────────────────────────────────────────── -->
 {#if !embedded && radialMenuOpen}
   <div class="radial-overlay">
     {#each interactionCards as card, i}
@@ -583,7 +601,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   </div>
 {/if}
 
-<!-- ─── Interaction card ────────────────────────────────────────────── -->
 {#if activeCard}
   <div class="card-overlay" on:click|self={() => activeCard = null}>
     <div class="card">
@@ -599,7 +616,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   </div>
 {/if}
 
-<!-- ─── Thought bubble ─────────────────────────────────────────────── -->
 <div class="thought-wrap" class:visible={thoughtBubbleVisible}>
   <div class="thought-bubble">
     <div class="thought-dots">
@@ -621,7 +637,6 @@ You give soft, reassuring, hopeful advice. You never preach. Keep it warm, short
   </div>
 </div>
 
-<!-- ─── Hint ───────────────────────────────────────────────────────── -->
 <p class="hint">Tap the dove to open interactions 🕊️</p>
 
 <div class="credit">Made by MakMin</div>
