@@ -43,47 +43,32 @@
     addHill(-300, 1300, '#5A8A28',       -1000, 180);
     addHill(400,  1000, '#6BA330',       -900,  140);
 
-    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 340 }, { x: 3000, y: 340 }, { x: 3000, y: 1800 }, { x: -3000, y: 1800 }], stroke: 0, fill: true, color: color.land, translate: { z: -700 } });
-    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 340 }, { x: 3000, y: 340 }, { x: 3000, y: 400 }, { x: -3000, y: 400 }], stroke: 0, fill: true, color: color.landLight, translate: { z: -690 } });
 
-    [
-      { x: -750, y: -400, z: -1100, s: 2.0 },
-      { x: -200, y: -480, z: -1150, s: 1.6 },
-      { x:  650, y: -380, z: -1050, s: 2.2 },
-      { x:  250, y: -450, z: -1120, s: 1.7 },
-      { x:  950, y: -420, z: -1180, s: 1.4 }
-    ].forEach(p => {
-      const c = new Zdog.Anchor({ addTo: staticGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: c, stroke: 150, color: color.cloudPink });
-      new Zdog.Shape({ addTo: c, stroke: 115, color: color.cloudWhite, translate: { x: -90, y: 15 } });
-      new Zdog.Shape({ addTo: c, stroke: 125, color: color.cloudPink,  translate: { x:  90, y:  8 } });
-      new Zdog.Shape({ addTo: c, stroke: 95,  color: color.cloudWhite, translate: { x: -150, y: 22 } });
-      new Zdog.Shape({ addTo: c, stroke: 85,  color: color.cloudPink,  translate: { x: 160, y: 18 } });
-    });
+    // ─── Land and Ground ──────────────────────────────────────────────
+    // Pushed land further away by changing z from -700/-690 to -1200/-1190
+    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 340 }, { x: 3000, y: 340 }, { x: 3000, y: 1800 }, { x: -3000, y: 1800 }], stroke: 0, fill: true, color: color.land, translate: { y: -200, z: -1200 } });
+    new Zdog.Shape({ addTo: staticGroup, path: [{ x: -3000, y: 340 }, { x: 3000, y: 340 }, { x: 3000, y: 400 }, { x: -3000, y: 400 }], stroke: 0, fill: true, color: color.landLight, translate: { y: -200, z: -1190 } });
 
+    // ─── Trees (Scaled up) ──────────────────────────────────────────
     [
-      { x: -750, y: 210, z: -850, s: 1.8, type: 'apples'   },
-      { x: -500, y: 240, z: -800, s: 1.4, type: 'blossoms' },
-      { x:  650, y: 220, z: -860, s: 1.9, type: 'apples'   },
-      { x:  850, y: 260, z: -780, s: 1.5, type: 'blossoms' }
+      // Background trees directly behind chicken
+      { x: -100, y: 150, z: -400, s: 3.0, type: 'apples'   }, 
+      { x:  150, y: 150, z: -350, s: 2.8, type: 'blossoms' },
+      
+      // Original landscape trees
+      { x: -750, y: 210, z: -850, s: 4.0, type: 'apples'   }, 
+      { x: -500, y: 240, z: -800, s: 3.5, type: 'blossoms' }, 
+      { x:  650, y: 220, z: -860, s: 4.0, type: 'apples'   }, 
+      { x:  850, y: 260, z: -780, s: 3.5, type: 'blossoms' }
     ].forEach(p => {
+      // ... (your existing drawing logic)
       const t = new Zdog.Anchor({ addTo: staticGroup, translate: { x: p.x, y: p.y, z: p.z }, scale: p.s });
-      new Zdog.Shape({ addTo: t, path: [{ y: 0 }, { y: -120 }], stroke: 30, color: color.trunkBrown });
+      new Zdog.Shape({ addTo: t, path: [{ y: 0 }, { y: -120 }], stroke: 90, color: color.trunkBrown });
       const fGroup = new Zdog.Anchor({ addTo: t, translate: { y: -150 } });
-      new Zdog.Shape({ addTo: fGroup, stroke: 200, color: '#5DA020' });
-      new Zdog.Shape({ addTo: fGroup, stroke: 160, color: '#7CBF37', translate: { x: -40, y: -40, z: 15 } });
-      new Zdog.Shape({ addTo: fGroup, stroke: 140, color: '#4A8516', translate: { x: 45,  y: 25,  z: -15 } });
-      if (p.type === 'apples') {
-        new Zdog.Shape({ addTo: fGroup, stroke: 20, color: color.appleRed, translate: { x: -35, y: 15,  z: 80 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 20, color: color.appleRed, translate: { x:  50, y: -30, z: 65 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 18, color: color.appleRed, translate: { x:   8, y: 50,  z: 70 } });
-      } else {
-        new Zdog.Shape({ addTo: fGroup, stroke: 22, color: color.blossomPink, translate: { x: -50, y: -20, z: 70 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 22, color: color.blossomPink, translate: { x:  35, y: 30,  z: 80 } });
-        new Zdog.Shape({ addTo: fGroup, stroke: 18, color: color.blossomPink, translate: { x:  -8, y: -60, z: 60 } });
-      }
+      new Zdog.Shape({ addTo: fGroup, stroke: 700, color: '#5DA020' });
+      new Zdog.Shape({ addTo: fGroup, stroke: 300, color: '#7CBF37', translate: { x: -40, y: -40, z: 15 } });
+      new Zdog.Shape({ addTo: fGroup, stroke: 200, color: '#4A8516', translate: { x: 45,  y: 25,  z: -15 } });
     });
-
     function createDaisy(parent, x, y, z, scale, stemLen, rotX, rotY, petalCol) {
       petalCol = petalCol || color.daisyWhite;
       const fg = new Zdog.Anchor({ addTo: parent, translate: { x, y: y + (120 - stemLen), z }, scale });
