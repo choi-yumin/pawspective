@@ -19,8 +19,8 @@
   const DOVE_SCALE = 1.35;
 
   // bee placement (high in open sky so it never sorts behind the grass disk)
-  const BEE_POS   = { x: -200, y: -380, z: -140 };
-  const BEE_SCALE = 1.1;
+  const BEE_POS   = { x: -200, y: 20, z: -140 };
+  const BEE_SCALE = 0.2;
 
   // navigation callback — call from a parent: <Island onSelectDove={() => view = 'dove'} />
   let { onSelectDove, onSelectBee } = $props();
@@ -194,34 +194,34 @@
       const b    = new Zdog.Anchor({ addTo: cont });
 
       // head + face
-      const head = new Zdog.Shape({ addTo: b, stroke: 130, color: B.yellow });
-      new Zdog.Shape({ addTo: head, stroke: 10, color: B.black, translate: { x: -22, y: 4, z: 36 } });
-      new Zdog.Shape({ addTo: head, stroke: 10, color: B.black, translate: { x:  14, y: 4, z: 40 } });
-      new Zdog.Shape({ addTo: head, stroke: 3.5, color: B.black, closed: false,
+      const head = new Zdog.Shape({ addTo: b, stroke: 28, color: B.yellow });
+      new Zdog.Shape({ addTo: head, stroke: 3, color: B.black, translate: { x: -22, y: 4, z: 36 } });
+      new Zdog.Shape({ addTo: head, stroke: 3, color: B.black, translate: { x:  14, y: 4, z: 40 } });
+      new Zdog.Shape({ addTo: head, stroke: 2, color: B.black, closed: false,
         path: [{ x: -4, y: 10, z: 42 }, { bezier: [{ x: -2, y: 13, z: 42 }, { x: 2, y: 13, z: 42 }, { x: 4, y: 10, z: 42 }] }] });
-      new Zdog.Shape({ addTo: head, path: [{ x: -34, y: -14, z: 44 }, { x: -10, y: -22, z: 44 }], stroke: 8, color: B.black, translate: { x: -18, y: -8, z: 20 }, rotate: { z: -0.18 } });
-      new Zdog.Shape({ addTo: head, path: [{ x: 10, y: -22, z: 44 }, { x: 34, y: -14, z: 44 }], stroke: 8, color: B.black, translate: { x: 18, y: -8, z: 20 }, rotate: { z: 0.18 } });
-      new Zdog.Shape({ addTo: head, stroke: 14, color: B.cheek, translate: { x: -32, y: 14, z: 24 } });
-      new Zdog.Shape({ addTo: head, stroke: 14, color: B.cheek, translate: { x:  24, y: 14, z: 30 } });
+      // new Zdog.Shape({ addTo: head, path: [{ x: -34, y: -14, z: 44 }, { x: -10, y: -22, z: 44 }], stroke: 8, color: B.black, translate: { x: -18, y: -8, z: 20 }, rotate: { z: -0.18 } });
+      // new Zdog.Shape({ addTo: head, path: [{ x: 10, y: -22, z: 44 }, { x: 34, y: -14, z: 44 }], stroke: 8, color: B.black, translate: { x: 18, y: -8, z: 20 }, rotate: { z: 0.18 } });
+      new Zdog.Shape({ addTo: head, stroke: 3, color: B.cheek, translate: { x: -32, y: 14, z: 24 } });
+      new Zdog.Shape({ addTo: head, stroke: 3, color: B.cheek, translate: { x:  24, y: 14, z: 30 } });
 
       // antennae (bob in tick)
       const antler = new Zdog.Anchor({ addTo: head, translate: { y: -44, z: 10 } });
-      new Zdog.Shape({ addTo: antler, path: [{ y: 0, x: -10 }, { y: -22, x: -24, z: 8 }],  stroke: 4.5, color: B.black });
-      new Zdog.Shape({ addTo: antler, path: [{ y: 0, x:  10 }, { y: -22, x:  -4, z: 12 }], stroke: 4.5, color: B.black });
+      new Zdog.Shape({ addTo: antler, path: [{ y: 0, x: -10 }, { y: -22, x: -24, z: 8 }],  stroke: 1, color: B.black });
+      new Zdog.Shape({ addTo: antler, path: [{ y: 0, x:  10 }, { y: -22, x:  -4, z: 12 }], stroke: 1, color: B.black });
 
       // arms
       const leftArm  = new Zdog.Anchor({ addTo: b, translate: { x: -18, y: 45, z: 32 } });
       const rightArm = new Zdog.Anchor({ addTo: b, translate: { x:  18, y: 45, z: 32 } });
-      new Zdog.Shape({ addTo: leftArm,  path: [{ y: 0 }, { y: 22 }], stroke: 7, color: B.black });
-      new Zdog.Shape({ addTo: rightArm, path: [{ y: 0 }, { y: 22 }], stroke: 7, color: B.black });
+      new Zdog.Shape({ addTo: leftArm,  path: [{ y: 0 }, { y: 22 }], stroke: 2, color: B.black });
+      new Zdog.Shape({ addTo: rightArm, path: [{ y: 0 }, { y: 22 }], stroke: 2, color: B.black });
 
       // striped body
       const body = new Zdog.Anchor({ addTo: b, translate: { y: 32, z: -35 } });
-      const seg = new Zdog.Shape({ addTo: body, stroke: 140, color: B.yellow });
-      seg.copy({ addTo: body, stroke: 162, color: B.black,  translate: { z: -32 } });
-      seg.copy({ addTo: body, stroke: 168, color: B.yellow, translate: { z: -64 } });
-      seg.copy({ addTo: body, stroke: 156, color: B.black,  translate: { z: -96 } });
-      new Zdog.Shape({ addTo: body, stroke: 108, color: B.black, translate: { z: -123 } });
+      const seg = new Zdog.Shape({ addTo: body, stroke: 35, color: B.yellow });
+      seg.copy({ addTo: body, stroke: 40.5, color: B.black,  translate: { z: -32 } });
+      seg.copy({ addTo: body, stroke: 42, color: B.yellow, translate: { z: -64 } });
+      seg.copy({ addTo: body, stroke: 39, color: B.black,  translate: { z: -96 } });
+      new Zdog.Shape({ addTo: body, stroke: 27, color: B.black, translate: { z: -123 } });
 
       // wings (flap in tick)
       const rightWing = new Zdog.Anchor({ addTo: body, translate: { z: -43, y: -65, x:  29 } });
@@ -357,8 +357,10 @@
         bee.rightWing.rotate.z = -TAU / 6 + (TAU / 10) * Math.sin(f / 0.9);
         bee.leftWing.rotate.z  =  TAU / 6 - (TAU / 10) * Math.sin(f / 0.9);
         bee.antler.rotate.x    = (TAU / 40) * Math.sin(f / 10);
-        bee.cont.translate.y   = BEE_POS.y + Math.sin(f / 14) * 6;
-        bee.cont.translate.x   = BEE_POS.x + Math.cos(f / 28) * 5;
+        
+        // Reduced the hover amplitude from 6 to 2 to match the smaller size
+        bee.cont.translate.y   = BEE_POS.y + Math.sin(f / 14) * 2; 
+        bee.cont.translate.x   = BEE_POS.x + Math.cos(f / 28) * 2;
       }
 
       const oldZoom = illo.zoom;
