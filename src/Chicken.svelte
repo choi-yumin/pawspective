@@ -16,6 +16,7 @@
   let thoughtBubbleText = 'Bawk bawk… got a question for this thoughtful chicken?';
   let replyInputValue = '';
   let isApiLoading = false;
+  let historyOpen = false;
 
   let chatHistory = [
     { role: 'assistant', content: 'Bawk bawk… got a question for this thoughtful chicken?' }
@@ -26,6 +27,10 @@
   let chatFn, peckFn, strutFn;
 
   function goHome() { dispatch('back'); }
+
+  function toggleHistory() {
+    historyOpen = !historyOpen;
+  }
 
   function showThought(text) {
     thoughtBubbleText = text;
@@ -436,6 +441,26 @@
 {#if !embedded}
   <div class="top-bar">
     <button class="bar-btn" on:click={goHome}>←</button>
+    <button class="bar-btn" on:click={toggleHistory}>
+      {historyOpen ? 'Close history' : '💬 History'}
+    </button>
+  </div>
+{/if}
+
+{#if !embedded && historyOpen}
+  <div class="history-panel">
+    <div class="history-header">
+      <h2>Session chat</h2>
+      <button class="close-btn" on:click={() => historyOpen = false}>✕</button>
+    </div>
+    <div class="history-scroll">
+      {#each chatHistory as msg}
+        <div class="history-msg {msg.role}">
+          <span class="history-label">{msg.role === 'assistant' ? '🐔 Professor Cluck' : 'You'}</span>
+          <p>{msg.content}</p>
+        </div>
+      {/each}
+    </div>
   </div>
 {/if}
 
@@ -465,7 +490,7 @@
   </div>
 </div>
 
-<p class="hint">Drag to rotate. Click to peck. Double-click to strut.</p>
+<p class="hint">Click to peck. Double-click to strut.</p>
 
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
@@ -512,6 +537,44 @@
   }
   .bar-btn:hover { background: #fff; transform: translateY(-1px); }
   .bar-btn:active { transform: scale(.96); }
+
+  /* ── History panel ───────────────────────────────────────────────── */
+  .history-panel {
+    position: fixed;
+    top: 62px; right: 16px;
+    width: min(360px, calc(100vw - 32px));
+    max-height: calc(100vh - 80px);
+    background: rgba(255,255,255,0.97);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(90,26,48,.18);
+    z-index: 25;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .history-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid rgba(240,74,111,.12);
+  }
+  .history-header h2 { margin: 0; font-size: 1rem; color: #5A1A30; }
+  .close-btn {
+    border: none; background: #fde6ef;
+    color: #B73058; border-radius: 50%;
+    width: 30px; height: 30px;
+    cursor: pointer; font-size: 0.85rem; font-weight: 700;
+  }
+  .history-scroll {
+    overflow-y: auto; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .history-msg {
+    border-radius: 16px; padding: 12px 14px;
+    font-size: 0.9rem; line-height: 1.55;
+  }
+  .history-msg p { margin: 4px 0 0; color: #3D1020; }
+  .history-msg.assistant { background: #fff0f6; }
+  .history-msg.user { background: #fffcf3; }
+  .history-label { font-weight: 800; font-size: 0.78rem; color: #B73058; }
 
   /* ── Chatbot ─────────────────────────────────────────────────── */
   .thought-wrap {
